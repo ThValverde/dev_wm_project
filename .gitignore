@@ -67,6 +67,8 @@ frontend/MyApp/.idea/
 frontend/MyApp/android/.idea/
 
 # Outros arquivos/pastas do React Native
+# Expo specific
+frontend/MyApp/.expo/
 frontend/MyApp/**/xcuserdata/
 frontend/MyApp/**/*.moved-aside
 frontend/MyApp/**/DerivedData/
