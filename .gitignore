@@ -1,0 +1,85 @@
+# Arquivos e pastas do sistema/IDE
+###################################
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+*~
+
+# VSCode (apenas arquivos de configuração permitidos)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# Python / Django
+#################
+backend/api/__pycache__/
+backend/api/*.py[cod]
+backend/api/__pycache__/
+backend/api/*.py[cod]
+backend/api/*.so
+backend/api/db.sqlite3
+backend/api/db.sqlite3-journal
+backend/api/local_settings.py
+backend/api/media/
+backend/api/venv/
+backend/api/.venv/
+backend/api/.idea/
+backend/api/.env
+backend/api/.env.*
+!backend/api/.env.example
+
+# Node.js / React Native
+########################
+frontend/MyApp/node_modules/
+frontend/MyApp/npm-debug.log*
+frontend/MyApp/yarn-debug.log*
+frontend/MyApp/yarn-error.log*
+# frontend/MyApp/package-lock.json
+
+# Android build
+frontend/MyApp/android/app/build/
+frontend/MyApp/android/build/
+frontend/MyApp/android/.gradle/
+
+# iOS build
+frontend/MyApp/ios/build/
+
+# Metro cache
+frontend/MyApp/.metro-cache/
+
+# React Native env files
+frontend/MyApp/.env
+frontend/MyApp/.env.*
+!frontend/MyApp/.env.example
+
+# React Native build artifacts
+frontend/MyApp/*.apk
+frontend/MyApp/*.aab
+frontend/MyApp/*.jsbundle
+# frontend/MyApp/*.ipa
+
+# IDEs específicas
+frontend/MyApp/.idea/
+frontend/MyApp/android/.idea/
+
+# Outros arquivos/pastas do React Native
+frontend/MyApp/**/xcuserdata/
+frontend/MyApp/**/*.moved-aside
+frontend/MyApp/**/DerivedData/
+frontend/MyApp/**/*.hmap
+frontend/MyApp/**/*.xccheckout
+frontend/MyApp/**/.xcode.env.local
+frontend/MyApp/**/Pods/
+frontend/MyApp/vendor/bundle/
+frontend/MyApp/.metro-health-check*
+frontend/MyApp/coverage/
+frontend/MyApp/.yarn/*
+!frontend/MyApp/.yarn/patches
+!frontend/MyApp/.yarn/plugins
+!frontend/MyApp/.yarn/releases
+!frontend/MyApp/.yarn/sdks
+!frontend/MyApp/.yarn/versions

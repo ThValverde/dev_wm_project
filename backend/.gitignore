@@ -1,0 +1,86 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib60/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# Usually these files are written by a script, but you might change things manually.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+db.sqlite3
+db.sqlite3-journal
+local_settings.py  # Se você usar um arquivo para configurações locais não versionadas
+media/             # Arquivos de mídia enviados pelo usuário (geralmente)
+
+# Virtualenv
+# Se o venv estiver DENTRO da pasta do projeto (o que fizemos no manual)
+venv/
+.venv/
+ENV/
+env/
+ENV/
+
+# IDEs e editores
+.idea/             # Para PyCharm ou IntelliJ
+.vscode/           # Para VSCode (alguns arquivos como settings.json podem ser versionados se compartilhados)
+*.sublime-project
+*.sublime-workspace
+
+# Arquivos de ambiente (contêm segredos!)
+.env
+.env.*
+!/.env.example     # Frequentemente se versiona um exemplo de .env
+
+# Arquivos de sistema operacional
+.DS_Store          # macOS
+Thumbs.db          # Windows
+desktop.ini        # Windows
