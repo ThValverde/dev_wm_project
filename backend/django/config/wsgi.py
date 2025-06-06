@@ -1,4 +1,7 @@
 """
+
+É arquivo com configurações para, quando colocar meu site no ar, o servidor vai saber o que fazer.
+
 WSGI config for config project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.

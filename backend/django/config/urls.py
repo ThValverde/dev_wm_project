@@ -1,4 +1,7 @@
 """
+
+Vamos definir quais URLs vai ser jogado quando clicar em cada link do site.
+
 URL configuration for config project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
