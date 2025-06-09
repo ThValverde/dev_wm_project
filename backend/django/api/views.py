@@ -58,6 +58,16 @@ class GrupoViewSet(viewsets.ModelViewSet):
             self.permission_classes = [permissions.IsAuthenticated]
         return super().get_permissions()
 
+    def perform_create(self, serializer):
+        """Define o criador do grupo automaticamente ao criar."""
+        serializer.save()
+        grupo = serializer.save()
+        perfil_usuario = self.request.user.perfil
+        perfil_usuario.grupo = grupo
+        perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN
+        perfil_usuario.save()
+
+
     @action(detail=False, methods=['get'], url_path='meu-grupo')
     def meu_grupo(self, request):
         """Retorna os detalhes do grupo ao qual o usuário logado pertence."""
