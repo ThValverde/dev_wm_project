@@ -18,8 +18,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('api.urls')), # Suas rotas do app
+    path('api/auth/', include('dj_rest_auth.urls')), # Rotas de login/logout/etc
+    # A rota de registro já está em api/urls.py, então não precisamos da do dj-rest-auth
 ]
