@@ -139,3 +139,7 @@ REST_FRAMEWORK = {
 
 # Necessário para dj-rest-auth
 SITE_ID = 1
+
+AUTH_USER_MODEL = 'api.Usuario'
+
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none'

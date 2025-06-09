@@ -95,6 +95,8 @@ class IdosoViewSet(viewsets.ModelViewSet):
     ViewSet para gerenciar os Idosos.
     A lógica garante que um usuário só veja e gerencie os idosos do seu próprio grupo.
     """
+
+    queryset = Idoso.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
 
     def get_serializer_class(self):
@@ -114,10 +116,29 @@ class IdosoViewSet(viewsets.ModelViewSet):
         serializer.save(grupo=self.request.user.perfil.grupo)
 
 
+    def get_serializer_class(self):
+        """Retorna o serializer apropriado baseado na ação."""
+        if self.action == 'list':
+            return IdosoListSerializer
+        return IdosoDetailSerializer
+    
+    def get_queryset(self):
+        """Filtra para retornar apenas idosos do grupo do usuário."""
+        user_grupo = self.request.user.perfil.grupo
+        if user_grupo:
+            return Idoso.objects.filter(grupo=user_grupo)
+        return Idoso.objects.none()
+
+
 class MedicamentoViewSet(viewsets.ModelViewSet):
     """ViewSet para gerenciar Medicamentos do grupo."""
+    queryset = Medicamento.objects.all()
     serializer_class = MedicamentoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+
+    def perform_create(self, serializer):
+        """Define o grupo do medicamento automaticamente ao criar."""
+        serializer.save(grupo=self.request.user.perfil.grupo)
 
     def get_queryset(self):
         """Filtra para retornar apenas medicamentos do grupo do usuário."""
@@ -125,7 +146,3 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
         if user_grupo:
             return Medicamento.objects.filter(grupo=user_grupo)
         return Medicamento.objects.none()
-
-    def perform_create(self, serializer):
-        """Define o grupo do medicamento automaticamente ao criar."""
-        serializer.save(grupo=self.request.user.perfil.grupo)

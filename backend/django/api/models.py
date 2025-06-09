@@ -6,6 +6,55 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils import timezone
+
+class CustomUserManager(BaseUserManager):
+    """
+    Gerenciador para o nosso modelo de usuário personalizado onde o email é o
+    identificador único para autenticação.
+    """
+    def create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError('O campo de Email é obrigatório')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
+        return self.create_user(email, password, **extra_fields)
+
+class Usuario(AbstractBaseUser, PermissionsMixin):
+    """
+    Nosso modelo de Usuário personalizado que usa e-mail para login.
+    """
+    email = models.EmailField('endereço de e-mail', unique=True)
+    nome_completo = models.CharField(max_length=150, blank=True)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    date_joined = models.DateTimeField(default=timezone.now)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['nome_completo']
+
+    objects = CustomUserManager()
+
+    def __str__(self):
+        return self.email
+
+
+
 # 1. Modelo para o Grupo
 class Grupo(models.Model):
     nome = models.CharField(max_length=100, verbose_name="Nome do Grupo", unique=True, help_text="Nome da casa de idosos")
@@ -148,14 +197,18 @@ class AdministracaoMedicamento(models.Model):
     def __str__(self):
         status = "Administrado" if self.foi_administrado else "Pendente"
         return f"{self.medicamento.nome} para {self.idoso.nome_completo} em {self.horario_previsto.strftime('%d/%m/%Y %H:%M')} ({status})"
-
-# --- SINAIS ---
-
-@receiver(post_save, sender=settings.AUTH_USER_MODEL) # CORREÇÃO: Usar settings.AUTH_USER_MODEL
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+    
+    
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def criar_perfil_usuario_apos_criar_usuario(sender, instance, created, **kwargs):
     """
-    Cria um PerfilUsuario automaticamente sempre que um novo usuário é criado.
+    Cria um PerfilUsuario automaticamente sempre que um novo usuário (Usuario) é criado.
     """
     if created:
-        # CORREÇÃO: Usar o nome correto do modelo 'PerfilUsuario'
         PerfilUsuario.objects.create(user=instance)
+
+# Os outros sinais são apenas para print, pode mantê-los se quiser
+@receiver(post_save, sender=Grupo)
+def criar_grupo(sender, instance, created, **kwargs):
+    if created:
+        print(f"Grupo criado: {instance.nome}")
