@@ -5,6 +5,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import NavBar from '../components/NavBar';
 import Estoque from '../pages/Estoque';
 import Inicio from '../pages/Inicio';
+import Horario from '../pages/Horario';
+import Dados from '../pages/Dados';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +21,8 @@ function App() {
           <Stack.Navigator initialRouteName="Inicio" screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Inicio" component={Inicio} />
             <Stack.Screen name="Estoque" component={Estoque} />
+            <Stack.Screen name="Horários" component={Horario} />
+            <Stack.Screen name="Dados" component={Dados} />
           </Stack.Navigator>
         </View>
       </View>
