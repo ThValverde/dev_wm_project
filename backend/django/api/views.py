@@ -141,12 +141,25 @@ class IdosoViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Idoso.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+    #permission_classes = [permissions.IsAuthenticated, IsGroupMember]
 
     def get_serializer_class(self):
         if self.action == 'list':
             return IdosoListSerializer
         return IdosoDetailSerializer
+    
+    def get_permissions(self):
+        """
+        Define permissões dinâmicas:
+        - Membros podem ler.
+        - Apenas Admins podem escrever/deletar.
+        """
+        if self.action in ['list', 'retrieve']:
+            self.permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated, IsGroupMember]    # Para tirar a permissão do User para adicionar ou remover usuarios
+                                                                                        # alterar IsGroupMember por IsGroupAdmin
+        return [permission() for permission in self.permission_classes]
     
     def get_queryset(self):
         """Filtra o queryset para retornar apenas idosos do grupo do usuário."""
@@ -164,7 +177,7 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
     queryset = Medicamento.objects.all()
     serializer_class = MedicamentoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-
+    
     def perform_create(self, serializer):
         """Define o grupo do medicamento automaticamente ao criar."""
         serializer.save(grupo=self.request.user.perfil.grupo)
