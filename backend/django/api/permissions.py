@@ -25,6 +25,16 @@ class IsGroupAdmin(permissions.BasePermission):
     """
     Permite acesso apenas ao administrador do grupo.
     """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if  view.action  == 'meu_grupo':
+            if not hasattr(request.user, 'perfil') or not request.user.perfil.grupo:
+                return False
+            return request.user.perfil.grupo.admin == request.user
+        return True
+
+
     def has_object_permission(self, request, view, obj):
         if not hasattr(request.user, 'perfil') or not request.user.perfil.grupo:
             return False

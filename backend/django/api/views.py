@@ -64,6 +64,11 @@ class GrupoViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update', 'destroy', 'codigo_de_acesso']:
             self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
 
+        elif self.action == 'meu_grupo':
+            # Ação para retornar o grupo do usuário logado, precisa ser autenticado.
+            self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+
+
         # Uma permissão padrão para qualquer outra ação que possa surgir.
         else:
             self.permission_classes = [permissions.IsAuthenticated]
