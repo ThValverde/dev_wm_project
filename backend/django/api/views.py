@@ -1,5 +1,4 @@
 # api/views.py
-
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,7 +15,7 @@ from .serializers import (
     IdosoDetailSerializer,
     MedicamentoSerializer
 )
-from .permissions import IsGroupMember, IsGroupAdmin
+from .permissions import IsGroupAdmin, IsGroupMember
 
 
 # --- Views de Autenticação e Usuário ---
@@ -43,37 +42,25 @@ class GrupoViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return GrupoCreateSerializer
         return GrupoSerializer
-
     def get_permissions(self):
         """
         Define permissões dinâmicas baseadas na ação para o Grupo.
+        Esta é a ÚNICA fonte de verdade para as permissões desta ViewSet.
         """
-        # Ações que qualquer usuário logado pode tentar fazer.
-        if self.action in ['create', 'entrar_com_codigo']:
-            self.permission_classes = [permissions.IsAuthenticated]
+        # Definimos uma lista padrão de permissões
+        permission_classes = [permissions.IsAuthenticated]
+
+        # Regras para ver detalhes ou a lista
+        if self.action == 'retrieve' or self.action == 'meu_grupo':
+            permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
         
-        # Para ver a lista de todos os grupos (mostrando dados mínimos).
-        elif self.action == 'list':
-            self.permission_classes = [permissions.IsAuthenticated]
-
-        # Para ver os detalhes de UM grupo, você precisa ser membro dele.
-        elif self.action == 'retrieve':
-            self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
-
-        # Para atualizar, deletar ou pegar o código de acesso, você PRECISA ser o admin.
+        # Regras para ações de admin
         elif self.action in ['update', 'partial_update', 'destroy', 'codigo_de_acesso']:
-            self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+            permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
 
-        elif self.action == 'meu_grupo':
-            # Ação para retornar o grupo do usuário logado, precisa ser autenticado.
-            self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+        # O return instancia e retorna a lista de permissões que definimos acima.
+        return [permission() for permission in permission_classes]
 
-
-        # Uma permissão padrão para qualquer outra ação que possa surgir.
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-            
-        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         # Utiliza o serializer de criação para validar a entrada (nome, senha)
@@ -95,7 +82,7 @@ class GrupoViewSet(viewsets.ModelViewSet):
         perfil_usuario.save()
 
 
-    @action(detail=False, methods=['get'], url_path='meu-grupo', permission_classes=[permissions.IsAuthenticated, IsGroupAdmin])
+    @action(detail=False, methods=['get'], url_path='meu-grupo')
     def meu_grupo(self, request):
         """Retorna os detalhes do grupo ao qual o usuário logado pertence."""
         if not request.user.perfil.grupo:
@@ -105,11 +92,20 @@ class GrupoViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(grupo)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'], url_path='codigo-de-acesso', permission_classes=[IsGroupAdmin])
+    @action(detail=True, methods=['get'], url_path='codigo-de-acesso')
     def codigo_acesso(self, request, pk=None):
+        print(f"--- AÇÃO 'codigo_de_acesso' FOI CHAMADA PELO USUÁRIO: {request.user} ---")
         grupo = self.get_object()
-        return Response({'codigo_acesso' :  grupo.codigo_acesso})
-    
+
+        # VERIFICAÇÃO MANUAL E EXPLÍCITA
+        if request.user != grupo.admin:
+            print(f"--- ACESSO NEGADO: ...")
+            self.permission_denied(
+                request, message='Apenas o administrador do grupo pode ver o código de acesso.'
+            )
+        
+        print(f"--- ACESSO PERMITIDO: ...")
+        return Response({'codigo_acesso': grupo.codigo_acesso})
     @action(detail=False, methods=['post'], url_path='entrar-com-codigo')
     def entrar_com_codigo(self, request):
         """
@@ -161,21 +157,6 @@ class IdosoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Define o grupo do idoso automaticamente ao criar."""
         serializer.save(grupo=self.request.user.perfil.grupo)
-
-
-    def get_serializer_class(self):
-        """Retorna o serializer apropriado baseado na ação."""
-        if self.action == 'list':
-            return IdosoListSerializer
-        return IdosoDetailSerializer
-    
-    def get_queryset(self):
-        """Filtra para retornar apenas idosos do grupo do usuário."""
-        user_grupo = self.request.user.perfil.grupo
-        if user_grupo:
-            return Idoso.objects.filter(grupo=user_grupo)
-        return Idoso.objects.none()
-
 
 class MedicamentoViewSet(viewsets.ModelViewSet):
     """ViewSet para gerenciar Medicamentos do grupo."""
