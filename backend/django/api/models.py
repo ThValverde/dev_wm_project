@@ -65,7 +65,7 @@ class Grupo(models.Model):
         related_name='grupos_administrados', 
         verbose_name="Administrador do Grupo"
     )
-    codigo_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Código de Acesso do Grupo")
+    codigo_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, unique_for_date = True, verbose_name="Código de Acesso do Grupo")
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação do Grupo")
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name="Data de Atualização do Grupo")
 

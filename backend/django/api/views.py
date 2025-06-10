@@ -106,6 +106,7 @@ class GrupoViewSet(viewsets.ModelViewSet):
         
         print(f"--- ACESSO PERMITIDO: ...")
         return Response({'codigo_acesso': grupo.codigo_acesso})
+    
     @action(detail=False, methods=['post'], url_path='entrar-com-codigo')
     def entrar_com_codigo(self, request):
         """
