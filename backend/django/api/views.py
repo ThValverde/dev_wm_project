@@ -45,30 +45,52 @@ class GrupoViewSet(viewsets.ModelViewSet):
         return GrupoSerializer
 
     def get_permissions(self):
-        """Define permissões por ação."""
-        if self.action in ['join', 'retrieve']:
-            # Para entrar ou ver detalhes, basta estar autenticado.
-            # A lógica de senha/código será feita na própria action.
+        """
+        Define permissões dinâmicas baseadas na ação para o Grupo.
+        """
+        # Ações que qualquer usuário logado pode tentar fazer.
+        if self.action in ['create', 'entrar_com_codigo']:
             self.permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ['update', 'partial_update', 'destroy', 'generate_access_code']:
-            # Apenas o admin do grupo pode alterar, deletar ou gerar código.
+        
+        # Para ver a lista de todos os grupos (mostrando dados mínimos).
+        elif self.action == 'list':
+            self.permission_classes = [permissions.IsAuthenticated]
+
+        # Para ver os detalhes de UM grupo, você precisa ser membro dele.
+        elif self.action == 'retrieve':
             self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+
+        # Para atualizar, deletar ou pegar o código de acesso, você PRECISA ser o admin.
+        elif self.action in ['update', 'partial_update', 'destroy', 'codigo_de_acesso']:
+            self.permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+
+        # Uma permissão padrão para qualquer outra ação que possa surgir.
         else:
-            # Para outras ações (como listar todos os grupos), apenas estar autenticado.
             self.permission_classes = [permissions.IsAuthenticated]
+            
         return super().get_permissions()
 
+    def create(self, request, *args, **kwargs):
+        # Utiliza o serializer de criação para validar a entrada (nome, senha)
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception=True)
+        # Chama o perform_create customizado para salvar e associar o admin ao grupo.
+        self.perform_create(serializer)
+        response_serializer = GrupoSerializer(serializer.instance, context=self.get_serializer_context())
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
     def perform_create(self, serializer):
-        """Define o criador do grupo automaticamente ao criar."""
-        serializer.save()
-        grupo = serializer.save()
-        perfil_usuario = self.request.user.perfil
+        """Define o usuário logado como administrador do grupo ao criar."""
+        grupo = serializer.save(admin = self.request.user)
+        perfil_usuario = PerfilUsuario.objects.get(user=self.request.user)
         perfil_usuario.grupo = grupo
-        perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN
+        perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN  # Define como admin do grupo
         perfil_usuario.save()
 
 
-    @action(detail=False, methods=['get'], url_path='meu-grupo')
+    @action(detail=False, methods=['get'], url_path='meu-grupo', permission_classes=[permissions.IsAuthenticated, IsGroupAdmin])
     def meu_grupo(self, request):
         """Retorna os detalhes do grupo ao qual o usuário logado pertence."""
         if not request.user.perfil.grupo:
@@ -78,25 +100,35 @@ class GrupoViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(grupo)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], url_path='entrar')
-    def entrar(self, request, pk=None):
-        """Ação para um usuário entrar em um grupo usando a senha."""
+    @action(detail=True, methods=['get'], url_path='codigo-de-acesso', permission_classes=[IsGroupAdmin])
+    def codigo_acesso(self, request, pk=None):
         grupo = self.get_object()
-        perfil_usuario = request.user.perfil
+        return Response({'codigo_acesso' :  grupo.codigo_acesso})
+    
+    @action(detail=False, methods=['post'], url_path='entrar-com-codigo')
+    def entrar_com_codigo(self, request):
+        """
+        Ação para um usuário entrar em um grupo usando o código de acesso UUID.
+        """
+        codigo = request.data.get('codigo_acesso')
+        if not codigo:
+            return Response({'detail': 'Código de acesso não fornecido.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Buscamos o grupo pelo código de acesso
+            grupo = Grupo.objects.get(codigo_acesso=codigo)
+        except Grupo.DoesNotExist:
+            return Response({'detail': 'Grupo com este código de acesso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
+        perfil_usuario = request.user.perfil
         if perfil_usuario.grupo:
             return Response({'detail': 'Você já pertence a um grupo.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        senha = request.data.get('senha')
-        if not senha or not check_password(senha, grupo.senha_hash):
-            return Response({'detail': 'Senha do grupo incorreta.'}, status=status.HTTP_403_FORBIDDEN)
-        
         perfil_usuario.grupo = grupo
-        perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO # Define como membro padrão
+        perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO
         perfil_usuario.save()
 
         return Response({'detail': f'Bem-vindo ao grupo {grupo.nome}!'}, status=status.HTTP_200_OK)
-
 
 # --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
 

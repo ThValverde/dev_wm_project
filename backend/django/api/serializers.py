@@ -126,7 +126,7 @@ class GrupoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grupo
         # Excluímos o hash da senha da visualização por segurança.
-        fields = ['id', 'nome', 'admin', 'codigo_acesso', 'membros']
+        fields = ['id', 'nome', 'admin', 'membros']
 
 
 class GrupoCreateSerializer(serializers.ModelSerializer):
