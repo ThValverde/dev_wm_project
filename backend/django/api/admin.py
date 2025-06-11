@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Idoso, Medicamento, AdministracaoMedicamento, ContatoParente
+from .models import Idoso, Medicamento, ContatoParente, Prescricao, LogAdministracao
 
 
 # Register your models here.
@@ -14,12 +14,8 @@ class IdosoAdmin(admin.ModelAdmin):
     list_display = ('nome_completo', 'data_nascimento', 'genero') # Bônus: melhora a lista de idosos
     search_fields = ['nome_completo'] # Bônus: adiciona uma barra de busca
 
-# Des-registre o modelo Idoso se ele já estiver registrado de forma simples
-# e o re-registre com a classe IdosoAdmin customizada.
-# Se você tiver 'admin.site.register(Idoso)', apague essa linha.
-
 admin.site.register(Idoso, IdosoAdmin)
-admin.site.register(Medicamento) # Os outros podem continuar registrados de forma simples
-admin.site.register(AdministracaoMedicamento)
-# Não precisamos registrar o ContatoParente aqui, pois ele será gerenciado pelo IdosoAdmin
+admin.site.register(Medicamento)
+admin.site.register(Prescricao)
+admin.site.register(LogAdministracao)
 
