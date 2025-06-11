@@ -51,17 +51,36 @@ class IsGroupAdmin(permissions.BasePermission):
 class IsGroupMember(permissions.BasePermission):
     """
     Permite acesso apenas a usuários que são membros do grupo
-    ao qual o objeto pertence.
+    ao qual o objeto (ou o objeto pai) pertence.
     """
+    def has_permission(self, request, view):
+        """
+        Verificação a nível de lista. Garante que o usuário
+        está logado e pertence a um grupo antes de prosseguir.
+        """
+        return request.user and request.user.is_authenticated and hasattr(request.user, 'perfil') and request.user.perfil.grupo is not None
+
     def has_object_permission(self, request, view, obj):
-        # Se o usuário não tiver um perfil ou um grupo, negue o acesso.
-        if not hasattr(request.user, 'perfil') or not request.user.perfil.grupo:
-            return False
-        
-        # O objeto (ex: um Idoso) tem um campo 'grupo'.
-        # Verificamos se o grupo do objeto é o mesmo do usuário.
+        """
+        Verificação a nível de objeto. Lida com diferentes tipos de objetos.
+        """
+        user_group = request.user.perfil.grupo
+
+        # Caso 1: O objeto é o próprio Grupo
+        if isinstance(obj, Grupo):
+            return obj == user_group
+
+        # Caso 2: O objeto tem um link direto para o grupo (ex: Idoso, Medicamento)
         if hasattr(obj, 'grupo'):
-            return obj.grupo == request.user.perfil.grupo
+            return obj.grupo == user_group
+
+        # Caso 3: O objeto é uma Prescricao (tem um link para Idoso)
+        if hasattr(obj, 'idoso') and hasattr(obj.idoso, 'grupo'):
+            return obj.idoso.grupo == user_group
         
-        # Se o próprio objeto for um Grupo.
-        return obj == request.user.perfil.grupo
+        # Caso 4: O objeto é um LogAdministracao (tem um link para Prescricao)
+        if hasattr(obj, 'prescricao') and hasattr(obj.prescricao.idoso, 'grupo'):
+            return obj.prescricao.idoso.grupo == user_group
+
+        # Se nenhuma das condições acima for atendida, nega o acesso por padrão.
+        return False

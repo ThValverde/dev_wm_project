@@ -94,7 +94,7 @@ class PerfilUsuarioSerializer(serializers.ModelSerializer):
     user = UsuarioSerializer(read_only=True)
     class Meta:
         model = PerfilUsuario
-        fields = ['user', 'permissao']
+        fields = ['user', 'permissao', 'responsaveis']
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
