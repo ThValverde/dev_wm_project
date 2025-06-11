@@ -6,22 +6,25 @@ from .views import (
     UserRegistrationView,
     GrupoViewSet,
     IdosoViewSet,
-    MedicamentoViewSet
+    MedicamentoViewSet,
+    PrescricaoViewSet,
+    UsuarioViewSet,
+    NotificacaoViewSet # 1. IMPORTE O NOVO VIEWSET
 )
 
-# O router cria as URLs padrão para os ViewSets (list, create, retrieve, update, destroy)
+# O router cria as URLs padrão
 router = DefaultRouter()
 router.register(r'grupos', GrupoViewSet)
 router.register(r'idosos', IdosoViewSet)
 router.register(r'medicamentos', MedicamentoViewSet)
+router.register(r'usuario', UsuarioViewSet, basename='usuario')
+router.register(r'prescricoes', PrescricaoViewSet)
+
+# 2. REGISTRE A NOVA ROTA
+router.register(r'notificacoes', NotificacaoViewSet, basename='notificacao')
+
 
 urlpatterns = [
-    # Rota para o registro de usuário
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
-    
-    # Inclui todas as rotas geradas pelo router
     path('', include(router.urls)),
-    
-    # OBS: Rotas para login/logout/tokens são melhor gerenciadas por bibliotecas
-    # como 'dj-rest-auth' ou 'djoser'.
 ]
