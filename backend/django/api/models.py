@@ -1,12 +1,15 @@
-# -*- coding: utf-8 -*-
+# models.py - Responsável por definir os modelos de dados do Django para o sistema de gerenciamento de idosos.
+# Modelos correspondem às tabelas do banco de dados e definem a estrutura dos dados.
+from django.db import models        # Importa o módulo de modelos do Django para definir os modelos de dados.
+import uuid                 # Importa o módulo uuid para gerar identificadores únicos universais (UUIDs).
+from django.conf import settings    # Importa as configurações do Django, especialmente o modelo de usuário personalizado.
+from django.db.models.signals import post_save  # Importa o sinal post_save para executar ações após salvar um modelo.
+from django.dispatch import receiver    # Importa o receptor para conectar sinais a funções específicas.
 
-from django.db import models
-import uuid
-from django.conf import settings
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin # Importa classes base para criar um modelo de usuário personalizado.
+# AbstractBaseUser fornece funcionalidades básicas de autenticação,
+# BaseUserManager é usado para criar um gerenciador de usuários personalizado,
+# PermissionsMixin adiciona campos e métodos relacionados a permissões e grupos de usuários.
 from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
