@@ -194,8 +194,7 @@ class Prescricao(models.Model):
 
     def __str__(self):
         status = "Administrado" if self.foi_administrado else "Pendente"
-        return f"{self.medicamento.nome} para {self.idoso.nome_completo} em {self.horario_previsto.strftime('%d/%m/%Y %H:%M')} ({status})"
-    
+        return f"{self.medicamento.nome} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
 # 7. Modelo para Registro de administração de Medicamento   
 
 class LogAdministracao(models.Model):
