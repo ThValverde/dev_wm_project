@@ -178,26 +178,40 @@ class Medicamento(models.Model):
         dosagem_str = f" ({self.dosagem_valor}{self.dosagem_unidade})" if self.dosagem_valor and self.dosagem_unidade else ""
         return f"{self.nome}{dosagem_str}"
 
-# 6. Modelo para Administração de Medicamentos
-class AdministracaoMedicamento(models.Model):
-    idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="medicacoes")
-    # CORREÇÃO: Removida a definição duplicada do campo 'medicamento'.
-    medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT)
-    horario_previsto = models.DateTimeField()
-    foi_administrado = models.BooleanField(default=False)
-    nao_tomou_motivo = models.CharField(max_length=255, blank=True, null=True, help_text="Preencher se o idoso não tomou o medicamento (NT)")
-    enfermeiro_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    data_hora_administracao = models.DateTimeField(null=True, blank=True, help_text="Horário exato em que foi administrado")
+# 6. Modelo para Prescricao de Medicamentos
+class Prescricao(models.Model):
+    idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
+    medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT) # Proteger para não deletar um medicamento em uso
+    horario_previsto = models.TimeField(verbose_name="Horário da Dose") # Ex: 08:00, 14:00, 22:00
+    dosagem = models.CharField(max_length=100, help_text="Ex: 1 comprimido, 5ml, 2 gotas")
+    instrucoes = models.TextField(blank=True, help_text="Ex: Administrar com alimentos.")
+    ativo = models.BooleanField(default=True, help_text="Desmarque para suspender esta prescrição.")
 
     class Meta:
-        verbose_name = "Administração de Medicamento"
-        verbose_name_plural = "Administrações de Medicamentos"
+        verbose_name = "Prescrição"
+        verbose_name_plural = "Prescrições"
         ordering = ['horario_previsto']
 
     def __str__(self):
         status = "Administrado" if self.foi_administrado else "Pendente"
         return f"{self.medicamento.nome} para {self.idoso.nome_completo} em {self.horario_previsto.strftime('%d/%m/%Y %H:%M')} ({status})"
     
+# 7. Modelo para Registro de administração de Medicamento   
+
+class LogAdministracao(models.Model):
+    class StatusDose(models.TextChoices):
+        ADMINISTRADO = 'OK', 'Administrado'
+        RECUSADO = 'REC', 'Recusado pelo paciente'
+        PULADO = 'PUL', 'Pulado/Esquecido'
+
+    prescricao = models.ForeignKey(Prescricao, on_delete=models.CASCADE, related_name="logs_de_administracao")
+    data_hora_administracao = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=3, choices=StatusDose.choices, default=StatusDose.ADMINISTRADO)
+    usuario_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    observacoes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Dose de {self.prescricao.medicamento.nome} para {self.prescricao.idoso.nome_completo} em {self.data_hora_administracao.strftime('%d/%m/%y %H:%M')}"
     
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def criar_perfil_usuario_apos_criar_usuario(sender, instance, created, **kwargs):

@@ -10,7 +10,8 @@ from .models import (
     Idoso,
     ContatoParente,
     Medicamento,
-    AdministracaoMedicamento
+    Prescricao, 
+    LogAdministracao
 )
 
 # Obtém o modelo de usuário customizado que você está usando (seja o padrão ou um personalizado)
@@ -35,16 +36,29 @@ class MedicamentoSerializer(serializers.ModelSerializer):
         exclude = ('grupo',)
 
 
-class AdministracaoMedicamentoSerializer(serializers.ModelSerializer):
-    """ Serializer para visualizar as administrações de medicamentos. """
-    # Usamos StringRelatedField para mostrar o nome do medicamento e do enfermeiro,
-    # em vez de apenas seus IDs. Fica mais legível no frontend.
-    medicamento = serializers.StringRelatedField(read_only=True)
-    enfermeiro_responsavel = serializers.StringRelatedField(read_only=True)
+class LogAdministracaoSerializer(serializers.ModelSerializer):
+    usuario_responsavel = serializers.StringRelatedField()
+    class Meta:
+        model = LogAdministracao
+        fields = '__all__'
+
+class PrescricaoSerializer(serializers.ModelSerializer):
+    # Aninhar informações para facilitar a exibição no frontend
+    medicamento = MedicamentoSerializer(read_only=True)
+    idoso = serializers.StringRelatedField(read_only=True)
+    
+    # Campo para receber o ID do medicamento ao criar/atualizar
+    medicamento_id = serializers.PrimaryKeyRelatedField(
+        queryset=Medicamento.objects.all(), source='medicamento', write_only=True
+    )
 
     class Meta:
-        model = AdministracaoMedicamento
-        fields = '__all__'
+        model = Prescricao
+        fields = [
+            'id', 'idoso', 'medicamento', 'medicamento_id', 'horario_previsto', 
+            'dosagem', 'instrucoes', 'ativo'
+        ]
+
 
 
 # --- Serializers Principais (com aninhamento) ---

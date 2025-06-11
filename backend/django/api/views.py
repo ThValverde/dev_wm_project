@@ -4,16 +4,19 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
+from django.db import transaction
 
 # Nossos modelos, serializers e permissões customizadas
-from .models import Grupo, Idoso, Medicamento, PerfilUsuario
+from .models import Grupo, Idoso, Medicamento, PerfilUsuario, Prescricao, LogAdministracao
 from .serializers import (
     UserRegistrationSerializer,
     GrupoSerializer,
     GrupoCreateSerializer,
     IdosoListSerializer,
     IdosoDetailSerializer,
-    MedicamentoSerializer
+    MedicamentoSerializer,
+    PrescricaoSerializer,
+    LogAdministracaoSerializer
 )
 from .permissions import IsGroupAdmin, IsGroupMember
 
@@ -188,3 +191,55 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
         if user_grupo:
             return Medicamento.objects.filter(grupo=user_grupo)
         return Medicamento.objects.none()
+    
+
+
+class PrescricaoViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gerenciar as Prescrições de medicamentos para os idosos.
+    Inclui uma ação para 'administrar' uma dose, que cria um log e baixa o estoque.
+    """
+    queryset = Prescricao.objects.all()
+    serializer_class = PrescricaoSerializer
+    permission_classes = [permissions.IsAuthenticated, IsGroupMember] # Use a lógica que preferir
+
+    def get_queryset(self):
+        """Filtra as prescrições para o grupo do usuário."""
+        return self.queryset.filter(idoso__grupo=self.request.user.perfil.grupo)
+
+    def perform_create(self, serializer):
+        """Ao criar uma prescrição, associa ao idoso correto do grupo."""
+        # A validação de que o idoso pertence ao grupo deve ser feita aqui.
+        idoso_id = self.request.data.get('idoso_id')
+        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo=self.request.user.perfil.grupo)
+        serializer.save(idoso=idoso)
+
+    @action(detail=True, methods=['post'], url_path='administrar')
+    @transaction.atomic # Garante que as operações com o banco de dados aconteçam juntas ou não aconteçam
+    def administrar(self, request, pk=None):
+        """
+        Cria um LogAdministracao para esta prescrição e decrementa o estoque do medicamento.
+        """
+        prescricao = self.get_object()
+        medicamento = prescricao.medicamento
+
+        if medicamento.quantidade_estoque <= 0:
+            return Response(
+                {'error': 'Estoque do medicamento zerado.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Decrementa o estoque e cria o log de administração
+        medicamento.quantidade_estoque -= 1
+        medicamento.save()
+
+        log = LogAdministracao.objects.create(
+            prescricao=prescricao,
+            usuario_responsavel=request.user,
+            # Você pode passar status e observações no corpo da requisição se desejar
+            status=request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO),
+            observacoes=request.data.get('observacoes', '')
+        )
+
+        log_serializer = LogAdministracaoSerializer(log)
+        return Response(log_serializer.data, status=status.HTTP_201_CREATED)
