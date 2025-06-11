@@ -81,7 +81,12 @@ class PerfilUsuario(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
     grupo = models.ForeignKey(Grupo, on_delete=models.SET_NULL, null=True, blank=True, related_name="membros")
     permissao = models.CharField(max_length=10, choices=Permissao.choices, default=Permissao.MEMBRO)
-
+    responsaveis = models.ManyToManyField(
+        "Idoso", #####
+        related_name =  'cuidadores',
+        blank=True,
+        verbose_name='Idosos Responsáveis'
+    )
     def __str__(self):
         # SUGESTÃO: Usar o e-mail ou str(self.user) é mais seguro com modelos de usuário customizados.
         return str(self.user)

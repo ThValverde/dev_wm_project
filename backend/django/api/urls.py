@@ -7,7 +7,8 @@ from .views import (
     GrupoViewSet,
     IdosoViewSet,
     MedicamentoViewSet,
-    PrescricaoViewSet
+    PrescricaoViewSet,
+    UsuarioViewSet
 )
 
 # O router cria as URLs padrão para os ViewSets (list, create, retrieve, update, destroy)
@@ -15,6 +16,7 @@ router = DefaultRouter()
 router.register(r'grupos', GrupoViewSet)
 router.register(r'idosos', IdosoViewSet)
 router.register(r'medicamentos', MedicamentoViewSet)
+router.register(r'usuario', UsuarioViewSet, basename='usuario')
 router.register(r'prescricoes', PrescricaoViewSet)
 
 urlpatterns = [

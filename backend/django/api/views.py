@@ -16,7 +16,8 @@ from .serializers import (
     IdosoDetailSerializer,
     MedicamentoSerializer,
     PrescricaoSerializer,
-    LogAdministracaoSerializer
+    LogAdministracaoSerializer,
+    PerfilUsuarioSerializer
 )
 from .permissions import IsGroupAdmin, IsGroupMember
 
@@ -243,3 +244,65 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
 
         log_serializer = LogAdministracaoSerializer(log)
         return Response(log_serializer.data, status=status.HTTP_201_CREATED)
+    
+
+class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet para visualizar usuários de um grupo e gerenciar suas responsabilidades
+    sobre os idosos. A criação de usuários é feita pelo endpoint de registro.
+    """
+    serializer_class = PerfilUsuarioSerializer
+    permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+
+    def get_queryset(self):
+        """ Filtra para mostrar apenas os perfis de usuário do mesmo grupo. """
+        if self.request.user.perfil.grupo:
+            # Usamos PerfilUsuario como base para já ter acesso aos idosos responsáveis.
+            return PerfilUsuario.objects.filter(grupo=self.request.user.perfil.grupo)
+        return PerfilUsuario.objects.none()
+
+    @action(
+        detail=True, 
+        methods=['post'], 
+        url_path='vincular-idoso',
+        permission_classes=[IsGroupAdmin] # Apenas admins podem vincular
+    )
+    def vincular_idoso(self, request, pk=None):
+        """
+        Vincula um idoso à lista de responsabilidades de um usuário (enfermeiro).
+        Espera um 'idoso_id' no corpo da requisição.
+        """
+        perfil_usuario_alvo = self.get_object() # O perfil do enfermeiro a ser modificado
+        idoso_id = request.data.get('idoso_id')
+
+        if not idoso_id:
+            return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Garante que o idoso a ser vinculado pertence ao mesmo grupo
+        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo=request.user.perfil.grupo)
+
+        # Adiciona o idoso à lista de responsabilidades
+        perfil_usuario_alvo.responsaveis.add(idoso)
+        
+        return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
+
+    @action(
+        detail=True, 
+        methods=['post'], 
+        url_path='desvincular-idoso',
+        permission_classes=[IsGroupAdmin] # Apenas admins podem desvincular
+    )
+    def desvincular_idoso(self, request, pk=None):
+        """ Desvincula um idoso da lista de responsabilidades de um usuário. """
+        perfil_usuario_alvo = self.get_object()
+        idoso_id = request.data.get('idoso_id')
+
+        if not idoso_id:
+            return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        idoso = get_object_or_404(Idoso, pk=idoso_id)
+
+        # Remove o idoso da lista de responsabilidades
+        perfil_usuario_alvo.responsaveis.remove(idoso)
+
+        return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
