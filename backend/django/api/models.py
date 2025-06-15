@@ -183,10 +183,15 @@ class Medicamento(models.Model):
             models.UniqueConstraint(fields=['grupo', 'nome'], name='unique_medicamento_por_grupo')
         ]
 
+    # def __str__(self):
+    #     # SUGESTÃO: Pequena melhoria para o caso de dosagem não ser preenchida.
+    #     dosagem_str = f" ({self.dosagem_valor}{self.dosagem_unidade})" if self.dosagem_valor and self.dosagem_unidade else ""
+    #     return f"{self.nome}{dosagem_str}"
+
+        
+    # SUGESTÃO DE CORREÇÃO em models.py, dentro da class Medicamento
     def __str__(self):
-        # SUGESTÃO: Pequena melhoria para o caso de dosagem não ser preenchida.
-        dosagem_str = f" ({self.dosagem_valor}{self.dosagem_unidade})" if self.dosagem_valor and self.dosagem_unidade else ""
-        return f"{self.nome}{dosagem_str}"
+        return self.nome
 
 # 6. Modelo para Prescricao de Medicamentos
 class Prescricao(models.Model):
@@ -202,9 +207,15 @@ class Prescricao(models.Model):
         verbose_name_plural = "Prescrições"
         ordering = ['horario_previsto']
 
+    # def __str__(self):
+    #     status = "Administrado" if self.foi_administrado else "Pendente"
+    #     return f"{self.medicamento.nome} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
+    
+    
     def __str__(self):
-        status = "Administrado" if self.foi_administrado else "Pendente"
         return f"{self.medicamento.nome} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
+
+
 # 7. Modelo para Registro de administração de Medicamento   
 
 class LogAdministracao(models.Model):
