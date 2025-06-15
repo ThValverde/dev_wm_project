@@ -27,10 +27,12 @@ class ContatoParenteSerializer(serializers.ModelSerializer):
         exclude = ('idoso',)
 
 
+
 class MedicamentoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medicamento
-        exclude = ('grupo',)
+        fields = '__all__'
+        read_only_fields = ('grupo',)
 
 
 class LogAdministracaoSerializer(serializers.ModelSerializer):

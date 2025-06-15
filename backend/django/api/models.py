@@ -160,32 +160,99 @@ class ContatoParente(models.Model):
         return f"{self.nome} ({self.get_parentesco_display()}) - Contato de {self.idoso.nome_completo}"
 
 # 5. Modelo para Medicamento
-class Medicamento(models.Model):
-    # CORREÇÃO: O related_name foi alterado para 'medicamentos' para evitar conflito.
-    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='medicamentos')
+# Em api/models.py - SUBSTITUA A CLASSE MEDICAMENTO INTEIRA POR ESTA
 
-    # ... classes de choices
+class Medicamento(models.Model):
+    # --- ENUMS (CLASSES DE OPÇÕES) ---
     class OpcoesFormaFarmaceutica(models.TextChoices):
         COMPRIMIDO = 'COMP', 'Comprimido'
         CAPSULA = 'CAP', 'Cápsula'
-        # ... outras opções
+        LIQUIDO_ML = 'LIQ_ML', 'Líquido (ml)'
+        CREME_G = 'CREME_G', 'Creme (g)'
+        GOTA = 'GOTA', 'Gota'
         OUTRO = 'OUT', 'Outro'
 
-    nome = models.CharField(max_length=200)
-    # ... outros campos do medicamento
-    quantidade_estoque = models.PositiveIntegerField(verbose_name="Quantidade em Estoque (Embalagens)", default=0, help_text="Número de caixas/frascos em estoque.")
+    class OpcoesConcentracaoUnidade(models.TextChoices):
+        
+        MICROGRAMA_POR_GRAMA = 'mcg/g', 'mcg/g'
+        MILIGRAMA_POR_GRAMA = 'mg/g', 'mg/g'
+        MG_POR_ML = 'mg/ml', 'mg/ml'
+        OUTRO = 'OUT', 'Outro'
+
+    # --- CAMPOS DO MODELO ---
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='medicamentos')
+    
+    # Campo para o nome comercial (ex: Tylenol, Pondera)
+    nome_marca = models.CharField(
+        verbose_name="Nome", 
+        max_length=200, 
+        help_text="Nome comercial do medicamento. Se for genérico, pode repetir o princípio ativo."
+    )
+    # Campo para o princípio ativo (ex: Paracetamol, Cloridrato de Paroxetina)
+    principio_ativo = models.CharField(
+        verbose_name="Princípio Ativo", 
+        max_length=200
+    )
+    # Caixa de seleção Sim/Não
+    generico = models.BooleanField(
+        verbose_name="É Genérico?", 
+        default=False
+    )
+    # Campo de texto para o laboratório
+    fabricante = models.CharField(
+        verbose_name="Fabricante/Laboratório", 
+        max_length=100, 
+        blank=True
+    )
+    # Campo para o valor da concentração (ex: 50, 100, 750)
+    concentracao_valor = models.DecimalField(
+        verbose_name="Concentração (Valor)",
+        max_digits=10, 
+        decimal_places=2,
+        null=True, blank=True
+    )
+    # Caixa de seleção para a unidade da concentração
+    concentracao_unidade = models.CharField(
+        verbose_name="Unidade de Concentração",
+        max_length=5,
+        choices=OpcoesConcentracaoUnidade.choices,
+        null=True, blank=True
+    )
+    # Caixa de seleção para a forma do medicamento
+    forma_farmaceutica = models.CharField(
+        verbose_name="Forma Farmacêutica",
+        max_length=10,
+        choices=OpcoesFormaFarmaceutica.choices
+    )
+    # Campo para o estoque
+    quantidade_estoque = models.PositiveIntegerField(
+        verbose_name="Quantidade em Estoque (Embalagens)", 
+        default=0, 
+        help_text="Número de caixas/frascos em estoque."
+    )
     
     class Meta:
-        # SUGESTÃO: Garante que o nome do medicamento seja único por grupo.
+        verbose_name = "Medicamento"
+        verbose_name_plural = "Medicamentos"
+        # Garante que não haja um medicamento com o mesmo nome de marca, princípio ativo e concentração no mesmo grupo.
         constraints = [
-            models.UniqueConstraint(fields=['grupo', 'nome'], name='unique_medicamento_por_grupo')
+            models.UniqueConstraint(
+                fields=['grupo', 'nome_marca', 'principio_ativo', 'concentracao_valor', 'concentracao_unidade'], 
+                name='unique_medicamento_no_grupo'
+            )
         ]
 
     def __str__(self):
-        # SUGESTÃO: Pequena melhoria para o caso de dosagem não ser preenchida.
-        dosagem_str = f" ({self.dosagem_valor}{self.dosagem_unidade})" if self.dosagem_valor and self.dosagem_unidade else ""
-        return f"{self.nome}{dosagem_str}"
-
+        # Um __str__ aprimorado que monta um nome completo e legível
+        concentracao = ""
+        if self.concentracao_valor and self.concentracao_unidade:
+            # Remove o .00 se for um número inteiro
+            valor_str = int(self.concentracao_valor) if self.concentracao_valor.to_integral_value() == self.concentracao_valor else self.concentracao_valor
+            concentracao = f" {valor_str}{self.get_concentracao_unidade_display()}"
+        
+        return f"{self.nome_marca} ({self.principio_ativo}){concentracao}"
+    
+    
 # 6. Modelo para Prescricao de Medicamentos
 class Prescricao(models.Model):
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
