@@ -7,25 +7,75 @@ import Estoque from '../pages/Estoque';
 import Inicio from '../pages/Inicio';
 import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
+import Login from '../pages/Login';
 
 const Stack = createNativeStackNavigator();
+
+// Componente wrapper que decide se mostra NavBar ou não
+function ScreenWrapper({ children, route, navigation }) {
+  const isLoginScreen = route.name === 'Login';
+  
+  if (isLoginScreen) {
+    // Na tela de Login, não mostra NavBar
+    return children;
+  }
+  
+  // Nas outras telas, mostra NavBar
+  return (
+    <View style={styles.container}>
+      <NavBar navigation={navigation} />
+      <Text style={styles.hugeText1}>Abrigo de Idosos</Text>
+      <Text style={styles.hugeText2}>E-doso</Text>
+      <View style={styles.appContainer}>
+        {children}
+      </View>
+    </View>
+  );
+}
 
 function App() {
   return (
     <NavigationContainer>
-      <View style={styles.container}>
-        <NavBar />
-        <Text style={styles.hugeText1}>Abrigo de Idosos</Text>
-        <Text style={styles.hugeText2}>E-doso</Text>
-        <View style={styles.appContainer}>
-          <Stack.Navigator initialRouteName="Inicio" screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Inicio" component={Inicio} />
-            <Stack.Screen name="Estoque" component={Estoque} />
-            <Stack.Screen name="Horários" component={Horario} />
-            <Stack.Screen name="Dados" component={Dados} />
-          </Stack.Navigator>
-        </View>
-      </View>
+      <Stack.Navigator 
+        initialRouteName="Inicio" 
+        screenOptions={{ headerShown: false }}
+      >
+        <Stack.Screen name="Login">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Login {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Inicio">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Inicio {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Estoque">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Estoque {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Horários">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Horario {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Dados">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Dados {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }
@@ -48,7 +98,6 @@ const styles = StyleSheet.create({
   },
   appContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
 });
 
