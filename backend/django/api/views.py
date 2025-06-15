@@ -34,8 +34,17 @@ class UserRegistrationView(generics.CreateAPIView):
 
 class GrupoViewSet(viewsets.ModelViewSet):
     queryset = Grupo.objects.all()
-    # (O restante do seu código do GrupoViewSet permanece aqui, sem alterações)
-    # ...
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] 
+
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return GrupoCreateSerializer
+        return GrupoSerializer
+
+    # Este método garante que o admin do grupo seja o usuário que o criou
+    def perform_create(self, serializer):
+        serializer.save(admin=self.request.user)
 
 # --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
 

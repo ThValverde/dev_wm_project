@@ -15,7 +15,7 @@ class IdosoAdmin(admin.ModelAdmin):
     search_fields = ['nome_completo'] # Bônus: adiciona uma barra de busca
 
 class NotificacaoAdmin(admin.ModelAdmin):
-    list_display = ('usuario', 'mensagem', 'lida', 'data_criacao')
+    list_display = ('destinatario', 'titulo', 'lida', 'data_criacao')
     list_filter = ('lida',)
 
 admin.site.register(Idoso, IdosoAdmin)
