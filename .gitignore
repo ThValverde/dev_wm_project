@@ -16,21 +16,24 @@ desktop.ini
 
 # Python / Django
 #################
-backend/django/__pycache__/
-backend/django/*.py[cod]
-backend/django/__pycache__/
-backend/django/*.py[cod]
-backend/django/*.so
-backend/django/db.sqlite3
-backend/django/db.sqlite3-journal
-backend/django/local_settings.py
-backend/django/media/
-backend/django/venv/
-backend/django/.venv/
-backend/django/.idea/
-backend/django/.env
-backend/django/.env.*
-!backend/django/.env.example
+**/__pycache__/
+*.py[cod]
+*.so
+
+# Banco de dados e arquivos de ambiente
+db.sqlite3*
+local_settings.py
+.env
+.env.*
+!.env.example
+
+# Pastas de ambiente virtual e IDE
+venv/
+.venv/
+.idea/
+
+# Mídia gerada pelo usuário
+/media/
 
 # Node.js / React Native
 ########################
