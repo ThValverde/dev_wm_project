@@ -108,7 +108,7 @@ function Dados({ route, navigation }) {
             <Text style={styles.infoValue}>{idoso.possui_plano_saude ? 'Sim' : 'Não'}</Text>
           </View>
           
-        /* A lógica abaixo mostra os detalhes do plano APENAS SE possui_plano_saude for true */
+         {/* A lógica abaixo mostra os detalhes do plano APENAS SE possui_plano_saude for true  */}
           {idoso.possui_plano_saude && (
             <>
               <View style={styles.infoRow}>

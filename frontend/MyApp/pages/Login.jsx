@@ -133,6 +133,15 @@ function Login({ navigation }) {
             <TouchableOpacity style={styles.forgotPasswordButton}>
               <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
             </TouchableOpacity>
+
+             <TouchableOpacity 
+              style={styles.signupButton}
+              onPress={() => navigation.navigate('Cadastro')}
+            >
+              <Text style={styles.signupText}>
+                Não tem uma conta? <Text style={{fontWeight: 'bold'}}>Cadastre-se</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.footer}>
@@ -251,6 +260,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  signupButton: {
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 10,
+  },
+  signupText: {
+    color: '#7f8c8d',
+    fontSize: 16,
   },
 });
 

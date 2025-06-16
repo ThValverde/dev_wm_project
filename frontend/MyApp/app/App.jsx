@@ -8,11 +8,12 @@ import Inicio from '../pages/Inicio';
 import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
 import Login from '../pages/Login';
+import Cadastro from '../pages/Cadastro';
 
 const Stack = createNativeStackNavigator();
 
 function ScreenWrapper({ children, route, navigation }) {
-  const isLoginScreen = route.name === 'Login';
+  const isLoginScreen = route.name === 'Login' || route.name === 'Cadastro';
   
   if (isLoginScreen) {
     // Na tela de Login, não mostra navbar
@@ -47,6 +48,15 @@ function App() {
           )}
       
         </Stack.Screen>
+
+        <Stack.Screen name="Cadastro">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Cadastro {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="Inicio">
           {(props) => (
             <ScreenWrapper {...props}>
