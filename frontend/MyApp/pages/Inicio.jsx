@@ -51,8 +51,8 @@ function Inicio({ navigation }) {
     const buscarIdosos = async () => {
       try {
         // 1. Pega o token salvo no dispositivo durante o login
-        // const token = await AsyncStorage.getItem('authToken');
-        const token = "4bb2e74021b22816ba55c9ed0febd8c790f08a71";
+        const token = await AsyncStorage.getItem('authToken');
+        // const token = "5dc0ad31848ea21971a643318bc3ef083a5fb61b";
         if (!token) {
           throw new Error('Token de autenticação não encontrado. Faça o login novamente.');
         }

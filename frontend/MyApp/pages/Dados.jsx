@@ -35,7 +35,6 @@ function getPlanoSaudeDisplay(idoso) {
     const planos = {
         'BRA': 'Bradesco Saúde',
         'UNI': 'Unimed',
-        // Adicione outras opções aqui conforme seu modelo
     };
     return planos[idoso.plano_saude] || 'Não informado';
 }

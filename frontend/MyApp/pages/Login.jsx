@@ -22,56 +22,52 @@ function Login({ navigation }) {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
 
+
     const validarEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
     };
 
-// GARANTA QUE SUA FUNÇÃO handleLogin ESTEJA ASSIM:
-
-/*    const handleLogin = async () => {
-        // Validações
-        if (!email.trim() || !senha.trim()) {
+    const handleLogin = async () => {
+      // Validações
+      if (!email.trim() || !senha.trim()) {
         Alert.alert('Erro', 'Por favor, preencha todos os campos.');
         return;
-        }
-        if (senha.length < 6) {
+      }
+      if (senha.length < 6) {
         Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
         return;
-        }
+      }
 
-        setCarregando(true);
+      setCarregando(true);
 
-        try {
+      try {
         const response = await axios.post('http://127.0.0.1:8000/api/auth/login/', {
-            email: email,
-            password: senha,
+          email: email,
+          password: senha,
         });
 
         // Pega o token da resposta usando o nome correto: 'key'
         const token = response.data.key;
 
         if (!token) {
-            throw new Error("Token não recebido do servidor.");
+          throw new Error("Token não recebido do servidor.");
         }
 
         await AsyncStorage.setItem('authToken', token);
+        
+        // Navigate immediately without waiting for alert confirmation
+        navigation.navigate('Inicio');
 
-        Alert.alert('Sucesso', 'Login realizado com sucesso!', [
-            { text: 'OK', onPress: () => navigation.navigate('Inicio') }
-        ]);
-
-        } catch (error) {
+      } catch (error) {
         console.error("Erro no login:", error.response ? error.response.data : error.message);
         Alert.alert('Erro', 'E-mail ou senha incorretos, ou falha na conexão.');
-        } finally {
+      } finally {
         setCarregando(false);
-        }
+      }
     };
 
- */
-
-    const handleLogin = () => {
+/*    const handleLogin = () => {
 
         console.log("Botão de teste clicado. Tentando navegar para 'Inicio'...");
         try {
@@ -81,7 +77,7 @@ function Login({ navigation }) {
             console.error("ERRO AO TENTAR NAVEGAR:", e);
             Alert.alert("Erro de Navegação", "Não foi possível navegar para a tela de Início.");
         }
-        };
+        };*/
 
   return (
       <SafeAreaView style={styles.container}>
