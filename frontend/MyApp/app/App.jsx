@@ -11,16 +11,15 @@ import Login from '../pages/Login';
 
 const Stack = createNativeStackNavigator();
 
-// Componente wrapper que decide se mostra NavBar ou não
 function ScreenWrapper({ children, route, navigation }) {
   const isLoginScreen = route.name === 'Login';
   
   if (isLoginScreen) {
-    // Na tela de Login, não mostra NavBar
+    // Na tela de Login, não mostra navbar
     return children;
   }
   
-  // Nas outras telas, mostra NavBar
+  // Nas outras telas, mostra navbar
   return (
     <View style={styles.container}>
       <NavBar navigation={navigation} />

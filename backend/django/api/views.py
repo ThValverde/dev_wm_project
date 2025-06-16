@@ -5,8 +5,6 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
-
-# Nossos modelos, serializers e permissões customizadas
 from .models import Grupo, Idoso, Medicamento, PerfilUsuario, Prescricao, LogAdministracao
 from .serializers import (
     UserRegistrationSerializer,
@@ -21,8 +19,6 @@ from .serializers import (
 )
 from .permissions import IsGroupAdmin, IsGroupMember
 
-
-# --- Views de Autenticação e Usuário ---
 
 class UserRegistrationView(generics.CreateAPIView):
     """
@@ -42,10 +38,10 @@ class GrupoViewSet(viewsets.ModelViewSet):
     queryset = Grupo.objects.all()
 
     def get_serializer_class(self):
-        # Usa um serializer para criação e outro para as demais ações.
         if self.action == 'create':
             return GrupoCreateSerializer
         return GrupoSerializer
+    
     def get_permissions(self):
         """
         Define permissões dinâmicas baseadas na ação para o Grupo.
@@ -209,7 +205,6 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Ao criar uma prescrição, associa ao idoso correto do grupo."""
-        # A validação de que o idoso pertence ao grupo deve ser feita aqui.
         idoso_id = self.request.data.get('idoso_id')
         idoso = get_object_or_404(Idoso, pk=idoso_id, grupo=self.request.user.perfil.grupo)
         serializer.save(idoso=idoso)
@@ -236,7 +231,6 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
         log = LogAdministracao.objects.create(
             prescricao=prescricao,
             usuario_responsavel=request.user,
-            # Você pode passar status e observações no corpo da requisição se desejar
             status=request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO),
             observacoes=request.data.get('observacoes', '')
         )

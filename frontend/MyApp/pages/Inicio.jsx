@@ -4,9 +4,8 @@ import SearchBar from '../components/SearchBar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Componente para exibir os cards, agora recebendo os dados via props
 function ListaDeIdosos({ idosos, navigation }) {
-  // Se a lista de idosos estiver vazia, mostra uma mensagem
+  // Se a lista de idosos estiver vazia, mostra a mensagem
   if (idosos.length === 0) {
     return <Text style={styles.infoText}>Nenhum idoso cadastrado neste grupo.</Text>;
   }
@@ -19,19 +18,15 @@ function ListaDeIdosos({ idosos, navigation }) {
             key={idoso.id}
             style={styles.card}
             onPress={() =>
-              // Aqui, quando navegamos, enviamos o objeto 'idoso' inteiro.
-              // A tela 'Dados' precisará ser ajustada para usar esses dados.
               navigation.navigate('Dados', { idoso: idoso })
             }
           >
-            {/* Usamos uma imagem padrão, pois o modelo Idoso ainda não tem foto */}
+            {/* Imagem padrão, adicionar foto a idoso */}
             <Image
               source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${idoso.nome_completo}` }}
               style={styles.image}
             />
             <Text style={styles.nome}>{idoso.nome_completo}</Text>
-            {/* O campo comorbidade não existe no seu modelo Idoso, então foi removido. */}
-            {/* Você pode adicionar um campo 'resumo_saude' no modelo se quiser. */}
           </TouchableOpacity>
         ))}
       </View>
@@ -46,13 +41,11 @@ function Inicio({ navigation }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
-  // useEffect para buscar os dados assim que a tela for carregada
   useEffect(() => {
     const buscarIdosos = async () => {
       try {
         // 1. Pega o token salvo no dispositivo durante o login
         const token = await AsyncStorage.getItem('authToken');
-        // const token = "5dc0ad31848ea21971a643318bc3ef083a5fb61b";
         if (!token) {
           throw new Error('Token de autenticação não encontrado. Faça o login novamente.');
         }

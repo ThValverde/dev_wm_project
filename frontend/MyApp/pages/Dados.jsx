@@ -1,11 +1,9 @@
-// frontend/MyApp/pages/Dados.jsx
-
 import React from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// --- FUNÇÕES DE AJUDA ---
+
 
 function calcularIdade(dataNasc) {
   if (!dataNasc) return 'Não informada';
@@ -31,7 +29,7 @@ function getPlanoSaudeDisplay(idoso) {
     if (idoso.plano_saude === 'OUT') {
         return idoso.plano_saude_outro || 'Outro (não especificado)';
     }
-    // Para os outros, podemos criar um mapa para exibir o nome completo.
+    // Para os outros, pode-se criar um mapa para exibir o nome completo.
     const planos = {
         'BRA': 'Bradesco Saúde',
         'UNI': 'Unimed',
@@ -86,9 +84,6 @@ function Dados({ route, navigation }) {
           </View>
         </View>
 
-        {/* ====================================================== */}
-        {/* NOVA SEÇÃO DE DOCUMENTOS ADICIONADA          */}
-        {/* ====================================================== */}
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Documentos</Text>
           <View style={styles.infoRow}>
@@ -105,9 +100,7 @@ function Dados({ route, navigation }) {
           </View>
         </View>
 
-        {/* ====================================================== */}
-        {/* NOVA SEÇÃO DE PLANO DE SAÚDE ADICIONADA         */}
-        {/* ====================================================== */}
+
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Plano de Saúde</Text>
           <View style={styles.infoRow}>
@@ -115,7 +108,7 @@ function Dados({ route, navigation }) {
             <Text style={styles.infoValue}>{idoso.possui_plano_saude ? 'Sim' : 'Não'}</Text>
           </View>
           
-          {/* A lógica abaixo mostra os detalhes do plano APENAS SE possui_plano_saude for true */}
+        /* A lógica abaixo mostra os detalhes do plano APENAS SE possui_plano_saude for true */
           {idoso.possui_plano_saude && (
             <>
               <View style={styles.infoRow}>
@@ -147,7 +140,6 @@ function Dados({ route, navigation }) {
   );
 }
 
-// Seus estilos (styles) continuam os mesmos aqui...
 const styles = StyleSheet.create({
     safeArea: {
       flex: 1,

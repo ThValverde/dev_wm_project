@@ -12,7 +12,7 @@ const medicamentos = [
   { nome: 'Paracetamol', quantidade: 6, VolMassa: '200 mg', Preco: 'R$9,99' },
   { nome: 'Ibuprofeno', quantidade: 8, VolMassa: '400 mg', Preco: 'R$15,99' },
   { nome: 'Carbamazepina', quantidade: 7, VolMassa: '200 mg', Preco: 'R$1250,00' },  
-  // ...adicione mais se necessário
+ 
 ];
 
 function Estoque() {

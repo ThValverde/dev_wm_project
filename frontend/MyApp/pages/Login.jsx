@@ -47,7 +47,7 @@ function Login({ navigation }) {
           password: senha,
         });
 
-        // Pega o token da resposta usando o nome correto: 'key'
+        // Pega o token da resposta usando o nome 'key'
         const token = response.data.key;
 
         if (!token) {
@@ -56,7 +56,6 @@ function Login({ navigation }) {
 
         await AsyncStorage.setItem('authToken', token);
         
-        // Navigate immediately without waiting for alert confirmation
         navigation.navigate('Inicio');
 
       } catch (error) {
@@ -67,17 +66,6 @@ function Login({ navigation }) {
       }
     };
 
-/*    const handleLogin = () => {
-
-        console.log("Botão de teste clicado. Tentando navegar para 'Inicio'...");
-        try {
-            navigation.navigate('Inicio');
-            console.log("Comando de navegação executado com sucesso!");
-        } catch (e) {
-            console.error("ERRO AO TENTAR NAVEGAR:", e);
-            Alert.alert("Erro de Navegação", "Não foi possível navegar para a tela de Início.");
-        }
-        };*/
 
   return (
       <SafeAreaView style={styles.container}>

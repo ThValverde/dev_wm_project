@@ -4,7 +4,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 
-# CORREÇÃO 1: Importar os modelos com os nomes corretos
 from .models import (
     Grupo,
     PerfilUsuario,
@@ -15,18 +14,12 @@ from .models import (
     LogAdministracao
 )
 
-# Obtém o modelo de usuário customizado
 Usuario = get_user_model()
-
-
-# --- Serializers de Suporte ---
 
 class ContatoParenteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContatoParente
         exclude = ('idoso',)
-
-
 
 class MedicamentoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,14 +27,12 @@ class MedicamentoSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('grupo',)
 
-
 class LogAdministracaoSerializer(serializers.ModelSerializer):
     usuario_responsavel = serializers.StringRelatedField()
     class Meta:
         model = LogAdministracao
         fields = '__all__'
 
-# Serializer para o modelo Prescricao que criamos
 class PrescricaoSerializer(serializers.ModelSerializer):
     medicamento = MedicamentoSerializer(read_only=True)
     idoso = serializers.StringRelatedField(read_only=True)
@@ -61,7 +52,6 @@ class PrescricaoSerializer(serializers.ModelSerializer):
         ]
 
 
-# --- Serializers Principais ---
 
 class IdosoListSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,21 +61,12 @@ class IdosoListSerializer(serializers.ModelSerializer):
 
 class IdosoDetailSerializer(serializers.ModelSerializer):
     contatos = ContatoParenteSerializer(many=True, read_only=True)
-    # CORREÇÃO 2: Alterado para 'prescricoes' e usando o serializer correto.
-    # Isso mostrará a "agenda de medicamentos" do idoso.
+    # Isso mostra a agenda de medicamentos do idoso
     prescricoes = PrescricaoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Idoso
         exclude = ('grupo',)
-        # Adicionamos 'prescricoes' ao fields para garantir que apareça se 'fields' for usado
-        # Se você usa 'exclude', já está implícito. Mas é bom saber.
-
-
-# --- Serializers de Usuário e Grupo ---
-
-# (As classes UsuarioSerializer, PerfilUsuarioSerializer, UserRegistrationSerializer,
-# GrupoSerializer e GrupoCreateSerializer podem continuar exatamente como estão)
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
