@@ -1,124 +1,151 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import SearchBar from '../components/SearchBar';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-function IdososUnsplash() {
-  const [imagens, setImagens] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('https://api.unsplash.com/search/photos?query=elderly&per_page=15&client_id=DBYn6-SZGTYN3T2xUJuRwa-_jvQ3FF3WCwAc5HBJL5Y')
-      .then(res => res.json())
-      .then(data => {
-        setImagens(data.results);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2c3e50" />
-        <Text style={styles.loadingText}>Carregando imagens...</Text>
-      </View>
-    );
+// Componente para exibir os cards, agora recebendo os dados via props
+function ListaDeIdosos({ idosos, navigation }) {
+  // Se a lista de idosos estiver vazia, mostra uma mensagem
+  if (idosos.length === 0) {
+    return <Text style={styles.infoText}>Nenhum idoso cadastrado neste grupo.</Text>;
   }
-
-  const nomes = [
-    { nome: "Seu Antônio", comorbidade: "Hipertensão" },
-    { nome: "Seu João", comorbidade: "Diabetes" },
-    { nome: "Dona Ana", comorbidade: "Artrose" },
-    { nome: "Seu José", comorbidade: "Alzheimer" },
-    { nome: "Dona Rosa", comorbidade: "Osteoporose" },
-    { nome: "Seu Pedro", comorbidade: "Parkinson" },
-    { nome: "Dona Lúcia", comorbidade: "Cardiopatia" },
-    { nome: "Dona Maria", comorbidade: "Hipertensão" },
-    { nome: "Seu Carlos", comorbidade: "Diabetes" },
-    { nome: "Dona Helena", comorbidade: "Artrose" },
-    { nome: "Dona Francisca", comorbidade: "Alzheimer" },
-    { nome: "Seu Manoel", comorbidade: "Osteoporose" },
-    { nome: "Dona Rita", comorbidade: "Parkinson" },
-    { nome: "Seu Paulo", comorbidade: "Cardiopatia" },
-  ];
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.grid}>
-        {imagens.map((img, idx) => (
-          <View key={img.id} style={styles.card}>
+        {idosos.map((idoso) => (
+          <TouchableOpacity
+            key={idoso.id}
+            style={styles.card}
+            onPress={() =>
+              // Aqui, quando navegamos, enviamos o objeto 'idoso' inteiro.
+              // A tela 'Dados' precisará ser ajustada para usar esses dados.
+              navigation.navigate('Dados', { idoso: idoso })
+            }
+          >
+            {/* Usamos uma imagem padrão, pois o modelo Idoso ainda não tem foto */}
             <Image
-              source={{ uri: img.urls.small }}
+              source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${idoso.nome_completo}` }}
               style={styles.image}
-              resizeMode="cover"
             />
-            <Text style={styles.nome}>{nomes[idx]?.nome || 'Idoso'}</Text>
-            <Text style={styles.comorbidade}>{nomes[idx]?.comorbidade || ''}</Text>
-          </View>
+            <Text style={styles.nome}>{idoso.nome_completo}</Text>
+            {/* O campo comorbidade não existe no seu modelo Idoso, então foi removido. */}
+            {/* Você pode adicionar um campo 'resumo_saude' no modelo se quiser. */}
+          </TouchableOpacity>
         ))}
       </View>
     </ScrollView>
   );
 }
 
-function Inicio() {
+// Componente principal da tela
+function Inicio({ navigation }) {
+  // Estados para armazenar os dados, o status de carregamento e os erros
+  const [idosos, setIdosos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+
+  // useEffect para buscar os dados assim que a tela for carregada
+  useEffect(() => {
+    const buscarIdosos = async () => {
+      try {
+        // 1. Pega o token salvo no dispositivo durante o login
+        // const token = await AsyncStorage.getItem('authToken');
+        const token = "4bb2e74021b22816ba55c9ed0febd8c790f08a71";
+        if (!token) {
+          throw new Error('Token de autenticação não encontrado. Faça o login novamente.');
+        }
+
+        // 2. Faz a requisição GET para a API, enviando o token no cabeçalho (Header)
+        const response = await axios.get('http://127.0.0.1:8000/api/idosos/', {
+          headers: {
+            'Authorization': `Token ${token}`
+          }
+        });
+
+        // 3. Salva a lista de idosos recebida no estado do componente
+        setIdosos(response.data);
+
+      } catch (err) {
+        console.error("Erro ao buscar idosos:", err.response ? err.response.data : err.message);
+        setErro('Não foi possível carregar os dados dos idosos.');
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    buscarIdosos();
+  }, []); // O array vazio [] garante que esta função rode apenas uma vez quando a tela montar
+
+  // Função para renderizar o conteúdo principal
+  const renderContent = () => {
+    if (carregando) {
+      return <ActivityIndicator size="large" color="#2c3e50" style={{ marginTop: 50 }} />;
+    }
+    if (erro) {
+      return <Text style={styles.infoText}>{erro}</Text>;
+    }
+    return <ListaDeIdosos idosos={idosos} navigation={navigation} />;
+  };
+  
   return (
     <View style={styles.appContainer}>
       <SearchBar />
-      <IdososUnsplash />
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        {renderContent()}
+      </View>
     </View>
   );
 }
 
+// Estilos (mantidos e com pequenas adições)
 const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+  },
   scrollContainer: {
     padding: 16,
     backgroundColor: '#fff',
     alignItems: 'center',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: '#fff',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#2c3e50',
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: 16,
   },
   card: {
-    width: 150,
+    backgroundColor: '#f4f4f4',
+    borderRadius: 10,
     margin: 8,
-    backgroundColor: '#f1f1f1',
-    borderRadius: 12,
     alignItems: 'center',
-    padding: 12,
+    width: 140,
+    padding: 10,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   image: {
-    width: 120,
-    height: 90,
-    borderRadius: 8,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: 8,
+    backgroundColor: '#e0e0e0',
   },
   nome: {
     fontWeight: 'bold',
     fontSize: 16,
     color: '#2c3e50',
-    marginBottom: 2,
+    textAlign: 'center',
   },
-  comorbidade: {
-    fontSize: 14,
-    color: '#555',
+  infoText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 16,
+    color: '#7f8c8d',
   },
 });
-
 
 export default Inicio;

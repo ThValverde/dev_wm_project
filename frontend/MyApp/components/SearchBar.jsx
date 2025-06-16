@@ -6,7 +6,7 @@ function SearchBar() {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    // Add search logic here
+    
   };
 
   return (
@@ -35,8 +35,8 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 24,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
     alignItems: 'center',
     width: '100%',
     maxWidth: 400,
