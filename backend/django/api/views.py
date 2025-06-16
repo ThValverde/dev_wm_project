@@ -141,11 +141,10 @@ class GrupoViewSet(viewsets.ModelViewSet):
 class IdosoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar os Idosos.
-    A lógica garante que um usuário só veja e gerencie os idosos do seu próprio grupo.
     """
-
     queryset = Idoso.objects.all()
-    #permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+    # Definimos um único serializer para todas as ações
+    serializer_class = IdosoDetailSerializer
 
     def get_serializer_class(self):
         if self.action == 'list':

@@ -45,10 +45,12 @@ INSTALLED_APPS = [
     'rest_framework.authtoken', # Adicione esta
     'dj_rest_auth',             # Adicione esta
     'dj_rest_auth.registration',# Adicione esta
+    'corsheaders',
     'api'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -144,3 +146,7 @@ SITE_ID = 1
 AUTH_USER_MODEL = 'api.Usuario'
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",  # O endereço do seu app React Native/Expo no navegador
+]

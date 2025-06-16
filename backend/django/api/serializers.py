@@ -66,7 +66,7 @@ class PrescricaoSerializer(serializers.ModelSerializer):
 class IdosoListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idoso
-        fields = ['id', 'nome_completo', 'data_nascimento']
+        fields = '__all__'
 
 
 class IdosoDetailSerializer(serializers.ModelSerializer):
