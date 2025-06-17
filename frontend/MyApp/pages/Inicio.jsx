@@ -11,7 +11,6 @@ function ListaDeIdosos({ idosos, navigation }) {
     return <Text style={styles.infoText}>Nenhum idoso cadastrado neste grupo.</Text>;
   }
 
-function IdososUnsplash({ navigation }) {
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.grid}>
@@ -112,12 +111,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#f4f4f4',
     borderRadius: 10,
-    backgroundColor: '#f4f4f4',
-    borderRadius: 10,
     margin: 8,
     alignItems: 'center',
-    width: 140,
-    padding: 10,
     width: 140,
     padding: 10,
     elevation: 2,
@@ -130,9 +125,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
     marginBottom: 8,
     backgroundColor: '#e0e0e0',
   },
@@ -140,7 +132,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     color: '#2c3e50',
-    textAlign: 'center',
     textAlign: 'center',
   },
   infoText: {
