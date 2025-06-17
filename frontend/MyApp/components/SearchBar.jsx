@@ -7,7 +7,6 @@ function SearchBar() {
   const handleSearch = (text) => {
     setSearchQuery(text);
     
-    
   };
 
   return (
