@@ -13,6 +13,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import NavBar from '../components/NavBar';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -20,49 +23,50 @@ function Login({ navigation }) {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
 
-  const validarEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
 
-  const handleLogin = async () => {
-    // Validações
-    if (!email.trim() || !senha.trim()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
-      return;
-    }
+    const validarEmail = (email) => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
+    };
 
-    if (!validarEmail(email)) {
-      Alert.alert('Erro', 'Por favor, insira um e-mail válido');
-      return;
-    }
-
-    if (senha.length < 6) {
-      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
-      return;
-    }
-
-    setCarregando(true);
-
-    try {
-      // Aqui você faria a autenticação real com seu backend
-      // Por enquanto, vamos simular um login bem-sucedido
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simula delay da API
-
-      // Login simulado - substitua pela lógica real
-      if (email === 'admin@edoso.com' && senha === '123456') {
-        Alert.alert('Sucesso', 'Login realizado com sucesso!', [
-          { text: 'OK', onPress: () => navigation.navigate('Inicio') }
-        ]);
-      } else {
-        Alert.alert('Erro', 'E-mail ou senha incorretos');
+    const handleLogin = async () => {
+      // Validações
+      if (!email.trim() || !senha.trim()) {
+        Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+        return;
       }
-    } catch (error) {
-      Alert.alert('Erro', 'Falha na conexão. Tente novamente.');
-    } finally {
-      setCarregando(false);
-    }
-  };
+      if (senha.length < 6) {
+        Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
+        return;
+      }
+
+      setCarregando(true);
+
+      try {
+        const response = await axios.post(`${baseURL}/api/auth/login/`, {
+          email: email,
+          password: senha,
+        });
+
+        // Pega o token da resposta usando o nome 'key'
+        const token = response.data.key;
+
+        if (!token) {
+          throw new Error("Token não recebido do servidor.");
+        }
+
+        await AsyncStorage.setItem('authToken', token);
+        
+        navigation.navigate('Inicio');
+
+      } catch (error) {
+        console.error("Erro no login:", error.response ? error.response.data : error.message);
+        Alert.alert('Erro', 'E-mail ou senha incorretos, ou falha na conexão.');
+      } finally {
+        setCarregando(false);
+      }
+    };
+
 
   return (
       <SafeAreaView style={styles.container}>
@@ -129,6 +133,15 @@ function Login({ navigation }) {
 
             <TouchableOpacity style={styles.forgotPasswordButton}>
               <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
+            </TouchableOpacity>
+
+             <TouchableOpacity 
+              style={styles.signupButton}
+              onPress={() => navigation.navigate('Cadastro')}
+            >
+              <Text style={styles.signupText}>
+                Não tem uma conta? <Text style={{fontWeight: 'bold'}}>Cadastre-se</Text>
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -248,6 +261,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  signupButton: {
+    alignItems: 'center',
+    marginTop: 20,
+    padding: 10,
+  },
+  signupText: {
+    color: '#7f8c8d',
+    fontSize: 16,
   },
 });
 

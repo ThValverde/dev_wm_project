@@ -8,19 +8,19 @@ import Inicio from '../pages/Inicio';
 import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
 import Login from '../pages/Login';
+import Cadastro from '../pages/Cadastro';
 
 const Stack = createNativeStackNavigator();
 
-// Componente wrapper que decide se mostra NavBar ou não
 function ScreenWrapper({ children, route, navigation }) {
-  const isLoginScreen = route.name === 'Login';
+  const isLoginScreen = route.name === 'Login' || route.name === 'Cadastro';
   
   if (isLoginScreen) {
-    // Na tela de Login, não mostra NavBar
+    // Na tela de Login, não mostra navbar
     return children;
   }
   
-  // Nas outras telas, mostra NavBar
+  // Nas outras telas, mostra navbar
   return (
     <View style={styles.container}>
       <NavBar navigation={navigation} />
@@ -37,7 +37,7 @@ function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="Inicio" 
+        initialRouteName="Login" 
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Login">
@@ -46,7 +46,17 @@ function App() {
               <Login {...props} />
             </ScreenWrapper>
           )}
+      
         </Stack.Screen>
+
+        <Stack.Screen name="Cadastro">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Cadastro {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+
         <Stack.Screen name="Inicio">
           {(props) => (
             <ScreenWrapper {...props}>

@@ -1,15 +1,15 @@
-# models.py - Responsável por definir os modelos de dados do Django para o sistema de gerenciamento de idosos.
-# Modelos correspondem às tabelas do banco de dados e definem a estrutura dos dados.
-from django.db import models        # Importa o módulo de modelos do Django para definir os modelos de dados.
-import uuid                 # Importa o módulo uuid para gerar identificadores únicos universais (UUIDs).
-from django.conf import settings    # Importa as configurações do Django, especialmente o modelo de usuário personalizado.
-from django.db.models.signals import post_save  # Importa o sinal post_save para executar ações após salvar um modelo.
-from django.dispatch import receiver    # Importa o receptor para conectar sinais a funções específicas.
+
+from django.db import models        #módulo de modelos do Django para definir os modelos de dados
+import uuid                 #módulo uuid 
+from django.conf import settings    #importa as configurações do django
+from django.db.models.signals import post_save  #importa o sinal post_save 
+from django.dispatch import receiver    #importa o receptor 
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin # Importa classes base para criar um modelo de usuário personalizado.
-# AbstractBaseUser fornece funcionalidades básicas de autenticação,
-# BaseUserManager é usado para criar um gerenciador de usuários personalizado,
-# PermissionsMixin adiciona campos e métodos relacionados a permissões e grupos de usuários.
+# AbstractBaseUser fornece funcionalidades básicas de autenticação
+# BaseUserManager é usado para criar um gerenciador de usuários personalizado
+# PermissionsMixin adiciona campos e métodos relacionados a permissões e grupos de usuários
+
 from django.utils import timezone
 
 class CustomUserManager(BaseUserManager):
@@ -91,7 +91,6 @@ class PerfilUsuario(models.Model):
         verbose_name='Idosos Responsáveis'
     )
     def __str__(self):
-        # SUGESTÃO: Usar o e-mail ou str(self.user) é mais seguro com modelos de usuário customizados.
         return str(self.user)
 
 # 3. Modelo para o Idoso
@@ -114,7 +113,9 @@ class Idoso(models.Model):
     class OpcoesPlanoSaude(models.TextChoices):
         BRADESCO = 'BRA', 'Bradesco Saúde'
         UNIMED = 'UNI', 'Unimed'
-        # ... outras opções
+        SUL_AMERICA = 'SUL', 'Sul América Saúde'
+        AMIL = 'AMI', 'Amil Saúde'
+        NOTREDAME = 'NOT', 'NotreDame Intermédica'
         OUTRO = 'OUT', 'Outro'
 
     possui_plano_saude = models.BooleanField(verbose_name="Possui plano de saúde?", default=False)
@@ -126,7 +127,7 @@ class Idoso(models.Model):
     condicoes = models.TextField(verbose_name="Condições", blank=True, help_text="Condições especiais ou alergias")
 
     class Meta:
-        # SUGESTÃO: Garante que o CPF, RG, etc. sejam únicos por grupo, não no sistema inteiro.
+        
         constraints = [
             models.UniqueConstraint(fields=['grupo', 'cpf'], name='unique_cpf_por_grupo'),
             models.UniqueConstraint(fields=['grupo', 'rg'], name='unique_rg_por_grupo'),
@@ -138,13 +139,15 @@ class Idoso(models.Model):
 
 # 4. Modelo para Contato de Parente 
 class ContatoParente(models.Model):
-    # CORREÇÃO: Removida a definição duplicada do campo 'idoso'.
+    
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name='contatos')
     
     class ParentescoChoices(models.TextChoices):
         FILHO_A = 'FI', 'Filho(a)'
         NETO_A = 'NE', 'Neto(a)'
-        # ... outras opções
+        IRMAO_A = 'IR', 'Irmão(ã)'
+        PAI_MAE = 'PA', 'Pai/Mãe'
+        AVO_A = 'AV', 'Avô/Avó'
         OUTRO = 'OU', 'Outro'
 
     nome = models.CharField(verbose_name="Nome do Parente", max_length=255)
@@ -161,31 +164,95 @@ class ContatoParente(models.Model):
 
 # 5. Modelo para Medicamento
 class Medicamento(models.Model):
-    # CORREÇÃO: O related_name foi alterado para 'medicamentos' para evitar conflito.
-    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='medicamentos')
-
-    # ... classes de choices
+   
     class OpcoesFormaFarmaceutica(models.TextChoices):
         COMPRIMIDO = 'COMP', 'Comprimido'
         CAPSULA = 'CAP', 'Cápsula'
-        # ... outras opções
+        LIQUIDO_ML = 'LIQ_ML', 'Líquido (ml)'
+        CREME_G = 'CREME_G', 'Creme (g)'
+        GOTA = 'GOTA', 'Gota'
         OUTRO = 'OUT', 'Outro'
 
-    nome = models.CharField(max_length=200)
-    # ... outros campos do medicamento
-    quantidade_estoque = models.PositiveIntegerField(verbose_name="Quantidade em Estoque (Embalagens)", default=0, help_text="Número de caixas/frascos em estoque.")
+    class OpcoesConcentracaoUnidade(models.TextChoices):
+        
+        MICROGRAMA_POR_GRAMA = 'mcg/g', 'mcg/g'
+        MILIGRAMA_POR_GRAMA = 'mg/g', 'mg/g'
+        MG_POR_ML = 'mg/ml', 'mg/ml'
+        OUTRO = 'OUT', 'Outro'
+
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='medicamentos')
+    
+    #campo para o nome comercial 
+    nome_marca = models.CharField(
+        verbose_name="Nome", 
+        max_length=200, 
+        help_text="Nome comercial do medicamento. Se for genérico, pode repetir o princípio ativo."
+    )
+    #campo para o princípio ativo (ex: Paracetamol, Cloridrato de Paroxetina)
+    principio_ativo = models.CharField(
+        verbose_name="Princípio Ativo", 
+        max_length=200
+    )
+    #caixa de seleção Sim/Não
+    generico = models.BooleanField(
+        verbose_name="É Genérico?", 
+        default=False
+    )
+    # campo de texto para o laboratório
+    fabricante = models.CharField(
+        verbose_name="Fabricante/Laboratório", 
+        max_length=100, 
+        blank=True
+    )
+    #campo para o valor da concentração 
+    concentracao_valor = models.DecimalField(
+        verbose_name="Concentração (Valor)",
+        max_digits=10, 
+        decimal_places=2,
+        null=True, blank=True
+    )
+    #caixa de seleção para a unidade da concentração
+    concentracao_unidade = models.CharField(
+        verbose_name="Unidade de Concentração",
+        max_length=5,
+        choices=OpcoesConcentracaoUnidade.choices,
+        null=True, blank=True
+    )
+    #caixa de seleção para a forma do medicamento
+    forma_farmaceutica = models.CharField(
+        verbose_name="Forma Farmacêutica",
+        max_length=10,
+        choices=OpcoesFormaFarmaceutica.choices
+    )
+    #campo para o estoque
+    quantidade_estoque = models.PositiveIntegerField(
+        verbose_name="Quantidade em Estoque (Embalagens)", 
+        default=0, 
+        help_text="Número de caixas/frascos em estoque."
+    )
     
     class Meta:
-        # SUGESTÃO: Garante que o nome do medicamento seja único por grupo.
+        verbose_name = "Medicamento"
+        verbose_name_plural = "Medicamentos"
+        
         constraints = [
-            models.UniqueConstraint(fields=['grupo', 'nome'], name='unique_medicamento_por_grupo')
+            models.UniqueConstraint(
+                fields=['grupo', 'nome_marca', 'principio_ativo', 'concentracao_valor', 'concentracao_unidade'], 
+                name='unique_medicamento_no_grupo'
+            )
         ]
 
     def __str__(self):
-        # SUGESTÃO: Pequena melhoria para o caso de dosagem não ser preenchida.
-        dosagem_str = f" ({self.dosagem_valor}{self.dosagem_unidade})" if self.dosagem_valor and self.dosagem_unidade else ""
-        return f"{self.nome}{dosagem_str}"
 
+        concentracao = ""
+        if self.concentracao_valor and self.concentracao_unidade:
+            
+            valor_str = int(self.concentracao_valor) if self.concentracao_valor.to_integral_value() == self.concentracao_valor else self.concentracao_valor
+            concentracao = f" {valor_str}{self.get_concentracao_unidade_display()}"
+        
+        return f"{self.nome_marca} ({self.principio_ativo}){concentracao}"
+    
+    
 # 6. Modelo para Prescricao de Medicamentos
 class Prescricao(models.Model):
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
@@ -203,6 +270,7 @@ class Prescricao(models.Model):
     def __str__(self):
         status = "Administrado" if self.foi_administrado else "Pendente"
         return f"{self.medicamento.nome} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
+
 # 7. Modelo para Registro de administração de Medicamento   
 
 class LogAdministracao(models.Model):
@@ -228,7 +296,7 @@ def criar_perfil_usuario_apos_criar_usuario(sender, instance, created, **kwargs)
     if created:
         PerfilUsuario.objects.create(user=instance)
 
-# Os outros sinais são apenas para print, pode mantê-los se quiser
+
 @receiver(post_save, sender=Grupo)
 def criar_grupo(sender, instance, created, **kwargs):
     if created:

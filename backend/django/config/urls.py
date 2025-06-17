@@ -22,7 +22,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls')), # Suas rotas do app
-    path('api/auth/', include('dj_rest_auth.urls')), # Rotas de login/logout/etc
-    # A rota de registro já está em api/urls.py, então não precisamos da do dj-rest-auth
+    path('api/', include('api.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
 ]
