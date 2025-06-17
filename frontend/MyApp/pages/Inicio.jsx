@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIn
 import SearchBar from '../components/SearchBar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 function ListaDeIdosos({ idosos, navigation }) {
   // Se a lista de idosos estiver vazia, mostra a mensagem
@@ -51,7 +52,7 @@ function Inicio({ navigation }) {
         }
 
         // 2. Faz a requisição GET para a API, enviando o token no cabeçalho (Header)
-        const response = await axios.get('http://127.0.0.1:8000/api/idosos/', {
+        const response = await axios.get(`${baseURL}/api/idosos/`, {
           headers: {
             'Authorization': `Token ${token}`
           }

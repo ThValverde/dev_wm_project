@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import baseURL from '../config/api';
 
 function Cadastro({ navigation }) {
   const [nome, setNome] = useState('');
@@ -28,8 +29,8 @@ function Cadastro({ navigation }) {
 
     try {
       // Endpoint de cadastro - ajuste se for diferente no seu backend
-      await axios.post('http://127.0.0.1:8000/api/auth/register/', {
-        username: nome, // ou 'name', 'full_name', etc., dependendo da sua API
+      await axios.post(`${baseURL}/api/auth/register/`, {
+        nome_completo: nome, // ou 'name', 'full_name', etc., dependendo da sua API
         email: email,
         password: senha,
       });

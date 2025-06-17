@@ -29,9 +29,6 @@ SECRET_KEY = 'django-insecure-&#o=w8e6d&hj_=u#yyc$_#j57l_714zndv%ol%9!+qv_)u#v6g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -148,5 +145,32 @@ AUTH_USER_MODEL = 'api.Usuario'
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8081",  # O endereço do seu app React Native/Expo no navegador
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://10.0.2.2:8000',      # For Android emulator access to host's localhost
+    'http://192.168.0.14:8000', # For local network access if server runs on this IP/port
+    'http://localhost:8081',  # For React Native Metro bundler
+    # If your frontend runs on a different port (e.g., React, Vue, Angular dev server), add its origin here:
+    # 'http://localhost:3000',
+    # 'http://127.0.0.1:3000',
+]
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+]
+
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
+
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
+    '192.168.0.14', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
 ]

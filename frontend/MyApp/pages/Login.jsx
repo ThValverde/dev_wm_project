@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NavBar from '../components/NavBar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 function Login({ navigation }) {
   const [email, setEmail] = useState('');
@@ -42,7 +43,7 @@ function Login({ navigation }) {
       setCarregando(true);
 
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/auth/login/', {
+        const response = await axios.post(`${baseURL}/api/auth/login/`, {
           email: email,
           password: senha,
         });
