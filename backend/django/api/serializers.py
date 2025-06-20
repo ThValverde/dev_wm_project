@@ -3,6 +3,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from .models import (
     Grupo,
@@ -92,6 +94,46 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Usuario
+        fields = ['id', 'email', 'nome_completo']
+        read_only_fields = ('id',)
+
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Serializer para a funcionalidade de alteração de senha.
+    """
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password1 = serializers.CharField(required=True, write_only=True)
+    new_password2 = serializers.CharField(required=True, write_only=True)
+
+    def validate_old_password(self, value):
+        """
+        Verifica se a senha antiga fornecida pelo usuário está correta.
+        """
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Sua senha antiga foi digitada incorretamente. Por favor, tente novamente.")
+        return value
+
+    def validate(self, data):
+        """
+        Verifica se as duas novas senhas fornecidas são idênticas.
+        """
+        if data['new_password1'] != data['new_password2']:
+            raise serializers.ValidationError({'new_password2': "A confirmação da nova senha não corresponde."})
+
+        # Valida a complexidade da nova senha usando os validadores do Django
+        try:
+            validate_password(data['new_password1'], self.context['request'].user)
+        except ValidationError as e:
+            raise serializers.ValidationError({'new_password1': list(e.messages)})
+
+        return data
 
 class GrupoSerializer(serializers.ModelSerializer):
     membros = PerfilUsuarioSerializer(many=True, read_only=True)
