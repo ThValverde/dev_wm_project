@@ -63,11 +63,7 @@ export default function SelecionarLar({ navigation }) {
   }, []);
 
   const handleCriarLar = () => {
-    Alert.alert(
-      'Criar Novo Lar',
-      'Funcionalidade em desenvolvimento',
-      [{ text: 'OK' }]
-    );
+    navigation.navigate('CriarLar');
   };
 
   const handleSelecionarLar = (lar) => {
