@@ -60,6 +60,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 # 1. Modelo para o Grupo
 class Grupo(models.Model):
+    radom_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="ID do Grupo")
     nome = models.CharField(max_length=100, verbose_name="Nome do Grupo", unique=True, help_text="Nome da casa de idosos")
     senha_hash = models.CharField(max_length=128)
     admin = models.ForeignKey(
@@ -186,11 +187,13 @@ class Medicamento(models.Model):
     nome_marca = models.CharField(
         verbose_name="Nome", 
         max_length=200, 
+        unique=True,
         help_text="Nome comercial do medicamento. Se for genérico, pode repetir o princípio ativo."
     )
     #campo para o princípio ativo (ex: Paracetamol, Cloridrato de Paroxetina)
     principio_ativo = models.CharField(
         verbose_name="Princípio Ativo", 
+        blank=True,
         max_length=200
     )
     #caixa de seleção Sim/Não

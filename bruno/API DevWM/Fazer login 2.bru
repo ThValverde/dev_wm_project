@@ -1,0 +1,18 @@
+meta {
+  name: Fazer login 2
+  type: http
+  seq: 49
+}
+
+post {
+  url: {{baseUrl}}/api/auth/login/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "email": "admin.chefe.novo@lar.com",
+      "password": "senhaSuperForte123"
+  }
+}

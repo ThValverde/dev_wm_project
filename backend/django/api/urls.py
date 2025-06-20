@@ -8,7 +8,10 @@ from .views import (
     IdosoViewSet,
     MedicamentoViewSet,
     PrescricaoViewSet,
-    UsuarioViewSet
+    UsuarioViewSet,
+    UserRegistrationView,
+    MyProfileView,
+    ChangePasswordView,
 )
 
 
@@ -22,6 +25,8 @@ router.register(r'prescricoes', PrescricaoViewSet)
 urlpatterns = [
     # Rota para o registro de usuário
     path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
+    path('auth/profile/', MyProfileView.as_view(), name='my-profile'),
+    path('auth/password/change/', ChangePasswordView.as_view(), name='password-change'),
     path('', include(router.urls)),
 
 ]

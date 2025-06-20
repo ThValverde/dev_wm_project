@@ -1,0 +1,15 @@
+meta {
+  name: Listar Usuários e Obter IDs
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{baseUrl}}/api/usuario/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}

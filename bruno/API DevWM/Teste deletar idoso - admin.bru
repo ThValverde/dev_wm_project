@@ -1,0 +1,15 @@
+meta {
+  name: Teste deletar idoso - admin
+  type: http
+  seq: 22
+}
+
+delete {
+  url: {{baseUrl}}/api/idosos/3/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}

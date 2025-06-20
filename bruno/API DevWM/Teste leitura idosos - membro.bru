@@ -1,0 +1,15 @@
+meta {
+  name: Teste leitura idosos - membro
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/api/idosos/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}

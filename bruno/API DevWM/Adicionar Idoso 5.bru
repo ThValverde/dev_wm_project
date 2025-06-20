@@ -1,0 +1,26 @@
+meta {
+  name: Adicionar Idoso 5
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/idosos/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+      "nome_completo": "Kaio Maria",
+      "data_nascimento": "1930-02-11",
+      "peso": 65.32,
+      "genero": "M",
+      "cpf": "11211232",
+      "cartao_sus": "981312324"
+  }
+}

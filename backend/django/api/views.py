@@ -15,7 +15,9 @@ from .serializers import (
     MedicamentoSerializer,
     PrescricaoSerializer,
     LogAdministracaoSerializer,
-    PerfilUsuarioSerializer
+    PerfilUsuarioSerializer, 
+    UserProfileSerializer,
+    ChangePasswordSerializer
 )
 from .permissions import IsGroupAdmin, IsGroupMember
 
@@ -26,6 +28,50 @@ class UserRegistrationView(generics.CreateAPIView):
     """
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny] # Qualquer um pode se registrar.
+
+
+class MyProfileView(generics.RetrieveUpdateAPIView):
+        """
+        Endpoint para que o usuário autenticado possa ver e editar seus próprios dados.
+        """
+        serializer_class = UserProfileSerializer
+        permission_classes = [permissions.IsAuthenticated] # Apenas usuários logados podem acessar
+
+        def get_object(self):
+            """
+            Sobrescreve o método padrão para que sempre retorne o usuário
+            que está fazendo a requisição (request.user).
+            """
+            return self.request.user
+
+class ChangePasswordView(generics.UpdateAPIView):
+    """
+    Endpoint para alteração de senha do usuário autenticado.
+    """
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        """
+        Sobrescreve para sempre retornar o usuário da requisição.
+        """
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        """
+        Lógica para processar a alteração da senha.
+        """
+        self.object = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            # Define a nova senha usando o método que já faz o hash
+            self.object.set_password(serializer.validated_data['new_password1'])
+            self.object.save()
+            # Retorna uma resposta de sucesso sem conteúdo
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # --- View de Gerenciamento de Grupo ---

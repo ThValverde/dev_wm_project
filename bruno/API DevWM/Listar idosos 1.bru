@@ -1,0 +1,15 @@
+meta {
+  name: Listar idosos 1
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/api/idosos/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}

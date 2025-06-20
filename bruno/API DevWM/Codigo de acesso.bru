@@ -1,0 +1,15 @@
+meta {
+  name: Codigo de acesso
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/grupos/1/codigo-de-acesso/
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}

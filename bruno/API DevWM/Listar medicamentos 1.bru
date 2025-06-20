@@ -1,0 +1,15 @@
+meta {
+  name: Listar medicamentos 1
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/api/medicamentos/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}

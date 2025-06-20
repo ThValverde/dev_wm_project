@@ -1,0 +1,21 @@
+meta {
+  name: Entrar em grupo com código
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/grupos/entrar-com-codigo/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}
+
+body:json {
+  {
+  "codigo_acesso": "f41e33e2-174a-4f00-9c48-9e6703db649b"
+  }
+}

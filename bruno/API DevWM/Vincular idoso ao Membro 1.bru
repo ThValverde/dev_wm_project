@@ -1,0 +1,21 @@
+meta {
+  name: Vincular idoso ao Membro 1
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/api/usuario/2/vincular-idoso/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+      "idoso_id": 1
+  }
+}

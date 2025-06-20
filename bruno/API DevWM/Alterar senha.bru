@@ -1,0 +1,23 @@
+meta {
+  name: Alterar senha
+  type: http
+  seq: 46
+}
+
+put {
+  url: {{baseUrl}}/api/auth/password/change/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+      "old_password": "senhaSuperForte123",
+      "new_password1": "novaSenhaSuperForte123",
+      "new_password2": "novaSenhaSuperForte123"
+  }
+}
