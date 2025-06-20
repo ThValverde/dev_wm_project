@@ -48,7 +48,7 @@ function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator 
-        initialRouteName="CriarLar" 
+        initialRouteName="Login" 
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Login">
@@ -67,7 +67,7 @@ function App() {
             </ScreenWrapper>
           )}
         </Stack.Screen>
-        
+
         <Stack.Screen name="CriarLar">
           {(props) => (
             <ScreenWrapper {...props}>
