@@ -1,0 +1,26 @@
+meta {
+  name: Criar um novo grupo
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/grupos/
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+    "nome": "Lar2 Bem-Estar", 
+    "senha": "senhaDoGrupo456"
+  }
+}
+
+assert {
+  : 
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Verificar membro
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{baseUrl}}/api/usuario/2/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}

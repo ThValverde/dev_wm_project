@@ -1,0 +1,26 @@
+meta {
+  name: Adicionar Idoso 3
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/idosos/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+      "nome_completo": "Josefina Laís",
+      "data_nascimento": "1943-01-23",
+      "peso": 76.2,
+      "genero": "F",
+      "cpf": "11211233",
+      "cartao_sus": "9898214412"
+  }
+}

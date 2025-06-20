@@ -1,0 +1,21 @@
+meta {
+  name: Editar idoso 6 - admin
+  type: http
+  seq: 27
+}
+
+patch {
+  url: {{baseUrl}}/api/idosos/6/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
+
+body:json {
+  {
+      "nome_completo": "Tiago Freitas"
+  }
+}

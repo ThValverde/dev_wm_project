@@ -1,0 +1,21 @@
+meta {
+  name: Administrar Dose
+  type: http
+  seq: 41
+}
+
+post {
+  url: {{baseUrl}}/api/prescricoes/4/administrar/
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}
+
+body:json {
+  {
+      "observacoes": "Idoso tomou o medicamento com água, sem problemas."
+  }
+}

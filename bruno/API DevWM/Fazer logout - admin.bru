@@ -1,0 +1,18 @@
+meta {
+  name: Fazer logout - admin
+  type: http
+  seq: 47
+}
+
+post {
+  url: {{baseUrl}}/api/auth/logout/
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "email": "admin.chefe@lar.com",
+      "password": "senhaSuperForte123"
+  }
+}

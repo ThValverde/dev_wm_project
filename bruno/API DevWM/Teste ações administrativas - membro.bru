@@ -1,0 +1,15 @@
+meta {
+  name: Teste ações administrativas - membro
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/api/grupos/1/codigo-de-acesso/
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Token {{authTokenB}}
+}

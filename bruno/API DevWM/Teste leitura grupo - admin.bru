@@ -1,0 +1,15 @@
+meta {
+  name: Teste leitura grupo - admin
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/api/grupos/meu-grupo/
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: Token {{authTokenA}}
+}
