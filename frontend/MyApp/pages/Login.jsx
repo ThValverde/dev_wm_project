@@ -57,7 +57,7 @@ function Login({ navigation }) {
 
         await AsyncStorage.setItem('authToken', token);
         
-        navigation.navigate('Inicio');
+        navigation.navigate('MainApp');
 
       } catch (error) {
         console.error("Erro no login:", error.response ? error.response.data : error.message);
