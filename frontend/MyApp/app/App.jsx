@@ -9,6 +9,7 @@ import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
 import Login from '../pages/Login';
 import Cadastro from '../pages/Cadastro';
+import SelecionarLar from '../pages/SelecionarLar';
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,15 @@ function ScreenWrapper({ children, route, navigation }) {
     return children;
   }
   
+  // Para SelecionarLar, renderize sem NavBar mas garantindo que receba navigation
+  if (route.name === 'SelecionarLar') {
+    return (
+      <View style={{ flex: 1 }}>
+        {React.cloneElement(children, { navigation })}
+      </View>
+    );
+  }
+
   // Nas outras telas, mostra navbar
   return (
     <View style={styles.container}>
@@ -47,6 +57,14 @@ function App() {
             </ScreenWrapper>
           )}
       
+        </Stack.Screen>
+
+        <Stack.Screen name="SelecionarLar">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <SelecionarLar {...props} />
+            </ScreenWrapper>
+          )}
         </Stack.Screen>
 
         <Stack.Screen name="Cadastro">

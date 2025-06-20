@@ -28,7 +28,7 @@ function Cadastro({ navigation }) {
     setCarregando(true);
 
     try {
-      // Endpoint de cadastro - ajuste se for diferente no seu backend
+      // Endpoint de cadastro - ajuste se for diferente no backend
       await axios.post(`${baseURL}/api/auth/register/`, {
         nome_completo: nome, // ou 'name', 'full_name', etc., dependendo da sua API
         email: email,
