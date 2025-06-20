@@ -1,6 +1,6 @@
 
 from rest_framework import permissions
-from .models import Grupo
+from .models import Grupo, PerfilUsuario
 
 class IsGroupAdmin(permissions.BasePermission):
     """
@@ -40,36 +40,47 @@ class IsGroupAdmin(permissions.BasePermission):
 class IsGroupMember(permissions.BasePermission):
     """
     Permite acesso apenas a usuários que são membros do grupo
-    ao qual o objeto (ou o objeto pai) pertence.
+    especificado na URL (para listas) ou no objeto (para detalhes).
     """
     def has_permission(self, request, view):
         """
-        Verificação a nível de lista. Garante que o usuário
-        está logado e pertence a um grupo antes de prosseguir.
+        Verifica a permissão a nível da view/lista, usando o grupo da URL.
         """
-        return request.user and request.user.is_authenticated and hasattr(request.user, 'perfil') and request.user.perfil.grupo is not None
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Para rotas aninhadas que passam 'grupo_pk' na URL
+        if 'grupo_pk' in view.kwargs:
+            grupo_pk = view.kwargs['grupo_pk']
+            # Verifica se o usuário autenticado pertence ao grupo da URL
+            return request.user.perfil.grupos.filter(pk=grupo_pk).exists()
+        
+        # Permite o acesso a rotas não aninhadas (como /api/grupos/)
+        # desde que o usuário esteja logado.
+        return True
 
     def has_object_permission(self, request, view, obj):
         """
-        Verificação a nível de objeto. Lida com diferentes tipos de objetos.
+        Verifica a permissão a nível de objeto (detalhe, update, delete).
         """
-        user_group = request.user.perfil.grupo
+        # Pega a lista de todos os grupos do usuário logado
+        user_groups = request.user.perfil.grupos.all()
 
-        # Caso 1: O objeto é o próprio Grupo
+        # Encontra o grupo associado ao objeto que está sendo acessado
+        target_group = None
         if isinstance(obj, Grupo):
-            return obj == user_group
-
-        # Caso 2: O objeto tem um link direto para o grupo (ex: Idoso, Medicamento)
-        if hasattr(obj, 'grupo'):
-            return obj.grupo == user_group
-
-        # Caso 3: O objeto é uma Prescricao (tem um link para Idoso)
-        if hasattr(obj, 'idoso') and hasattr(obj.idoso, 'grupo'):
-            return obj.idoso.grupo == user_group
+            target_group = obj
+        elif isinstance(obj, PerfilUsuario): # Se o objeto for um perfil de usuário
+            # A permissão é concedida se houver qualquer grupo em comum
+            return obj.grupos.filter(pk__in=user_groups).exists()
+        elif hasattr(obj, 'grupo'):
+            target_group = obj.grupo
+        elif hasattr(obj, 'idoso') and hasattr(obj.idoso, 'grupo'):
+            target_group = obj.idoso.grupo
         
-        # Caso 4: O objeto é um LogAdministracao (tem um link para Prescricao)
-        if hasattr(obj, 'prescricao') and hasattr(obj.prescricao.idoso, 'grupo'):
-            return obj.prescricao.idoso.grupo == user_group
+        if not target_group:
+            return False
 
-        # Se nenhuma das condições acima for atendida, nega o acesso por padrão.
-        return False
+        # A verificação principal: o grupo do objeto está na lista de grupos do usuário?
+        return target_group in user_groups
+

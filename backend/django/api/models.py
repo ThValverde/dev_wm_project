@@ -83,7 +83,12 @@ class PerfilUsuario(models.Model):
         MEMBRO = 'MEMBRO', 'Membro'
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
-    grupo = models.ForeignKey(Grupo, on_delete=models.SET_NULL, null=True, blank=True, related_name="membros")
+    grupos = models.ManyToManyField(
+        Grupo,
+        related_name="perfil_membros", # 'related_name' alterado para evitar conflito
+        blank=True,
+        verbose_name="Grupos do Usuário"
+    )
     permissao = models.CharField(max_length=10, choices=Permissao.choices, default=Permissao.MEMBRO)
     responsaveis = models.ManyToManyField(
         "Idoso", #####

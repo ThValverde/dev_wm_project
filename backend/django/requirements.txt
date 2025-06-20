@@ -12,6 +12,7 @@ django-allauth==65.9.0
 django-cors-headers==4.7.0
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
+nested-routers==0.94.2
 kombu==5.5.4
 packaging==25.0
 prompt_toolkit==3.0.51

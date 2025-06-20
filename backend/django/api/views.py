@@ -121,10 +121,10 @@ class GrupoViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Define o usuário logado como administrador do grupo ao criar."""
-        grupo = serializer.save(admin = self.request.user)
+        grupo = serializer.save(admin=self.request.user)
         perfil_usuario = PerfilUsuario.objects.get(user=self.request.user)
-        perfil_usuario.grupo = grupo
-        perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN  # Define como admin do grupo
+        perfil_usuario.grupos.add(grupo) # <-- CORREÇÃO: Usa .add()
+        perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN
         perfil_usuario.save()
 
 
@@ -169,11 +169,13 @@ class GrupoViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Grupo com este código de acesso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         perfil_usuario = request.user.perfil
-        if perfil_usuario.grupo:
-            return Response({'detail': 'Você já pertence a um grupo.'}, status=status.HTTP_400_BAD_REQUEST)
+        if grupo in perfil_usuario.grupos.all():
+            return Response({'detail': f'Você já é membro do grupo {grupo.nome}.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        perfil_usuario.grupo = grupo
-        perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO
+        perfil_usuario.grupos.add(grupo)  # Adiciona o grupo aos grupos do usuário
+        if not perfil_usuario.permissao:
+            perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO
+
         perfil_usuario.save()
 
         return Response({'detail': f'Bem-vindo ao grupo {grupo.nome}!'}, status=status.HTTP_200_OK)
@@ -181,83 +183,96 @@ class GrupoViewSet(viewsets.ModelViewSet):
 # --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
 
 class IdosoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar os Idosos.
-    """
-    queryset = Idoso.objects.all()
-    # Definimos um único serializer para todas as ações
-    serializer_class = IdosoDetailSerializer
-
     def get_serializer_class(self):
+        """
+        Retorna um serializer diferente para a ação 'list' e outro
+        para as demais ações (retrieve, create, update).
+        """
         if self.action == 'list':
             return IdosoListSerializer
         return IdosoDetailSerializer
-    
-    def get_permissions(self):
-        """
-        Define permissões dinâmicas:
-        - Membros podem ler.
-        - Apenas Admins podem escrever/deletar.
-        """
-        if self.action in ['list', 'retrieve']:
-            self.permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated, IsGroupMember]    # Para tirar a permissão do User para adicionar ou remover usuarios
-                                                                                        # alterar IsGroupMember por IsGroupAdmin
-        return [permission() for permission in self.permission_classes]
-    
     def get_queryset(self):
-        """Filtra o queryset para retornar apenas idosos do grupo do usuário."""
-        user_grupo = self.request.user.perfil.grupo
-        if user_grupo:
-            return Idoso.objects.filter(grupo=user_grupo)
-        return Idoso.objects.none() # Retorna nada se o usuário não tem grupo
+        """
+        Filtra o queryset para retornar apenas idosos do grupo 
+        especificado na URL da rota aninhada.
+        """
+        # Pega o ID do grupo que vem da URL, ex: /api/grupos/5/idosos/
+        grupo_pk = self.kwargs.get('grupo_pk')
+        if grupo_pk:
+            # Filtra os idosos pelo ID do grupo da URL
+            return Idoso.objects.filter(grupo_id=grupo_pk)
+        # Se por algum motivo não houver grupo_pk, não retorna nada.
+        return Idoso.objects.none()
 
     def perform_create(self, serializer):
-        """Define o grupo do idoso automaticamente ao criar."""
-        serializer.save(grupo=self.request.user.perfil.grupo)
+        """
+        Ao criar um idoso, associa-o ao grupo especificado na URL.
+        """
+        # Pega o ID do grupo da URL
+        grupo_pk = self.kwargs.get('grupo_pk')
+        # Busca o objeto Grupo para garantir que ele existe
+        grupo = get_object_or_404(Grupo, pk=grupo_pk)
+        # Salva o novo idoso, associando ao grupo correto
+        serializer.save(grupo=grupo)
 
 class MedicamentoViewSet(viewsets.ModelViewSet):
     """ViewSet para gerenciar Medicamentos do grupo."""
-    queryset = Medicamento.objects.all()
     serializer_class = MedicamentoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
     
-    def perform_create(self, serializer):
-        """Define o grupo do medicamento automaticamente ao criar."""
-        serializer.save(grupo=self.request.user.perfil.grupo)
-
     def get_queryset(self):
-        """Filtra para retornar apenas medicamentos do grupo do usuário."""
-        user_grupo = self.request.user.perfil.grupo
-        if user_grupo:
-            return Medicamento.objects.filter(grupo=user_grupo)
+        """
+        Filtra para retornar apenas medicamentos do grupo especificado na URL.
+        """
+        # Pega o ID do grupo da URL
+        grupo_pk = self.kwargs.get('grupo_pk')
+        if grupo_pk:
+            return Medicamento.objects.filter(grupo_id=grupo_pk)
         return Medicamento.objects.none()
-    
+
+    def perform_create(self, serializer):
+        """
+        Ao criar um medicamento, associa-o ao grupo especificado na URL.
+        """
+        # Pega o ID do grupo da URL
+        grupo_pk = self.kwargs.get('grupo_pk')
+        grupo = get_object_or_404(Grupo, pk=grupo_pk)
+        # Salva o novo medicamento associando ao grupo correto
+        serializer.save(grupo=grupo)
 
 
 class PrescricaoViewSet(viewsets.ModelViewSet):
     """
     ViewSet para gerenciar as Prescrições de medicamentos para os idosos.
-    Inclui uma ação para 'administrar' uma dose, que cria um log e baixa o estoque.
     """
-    queryset = Prescricao.objects.all()
     serializer_class = PrescricaoSerializer
-    permission_classes = [permissions.IsAuthenticated, IsGroupMember] # Use a lógica que preferir
+    permission_classes = [permissions.IsAuthenticated, IsGroupMember]
 
     def get_queryset(self):
-        """Filtra as prescrições para o grupo do usuário."""
-        return self.queryset.filter(idoso__grupo=self.request.user.perfil.grupo)
+        """
+        Filtra as prescrições para o grupo especificado na URL.
+        """
+        grupo_pk = self.kwargs.get('grupo_pk')
+        if grupo_pk:
+            return Prescricao.objects.filter(idoso__grupo_id=grupo_pk)
+        return Prescricao.objects.none()
 
     def perform_create(self, serializer):
-        """Ao criar uma prescrição, associa ao idoso correto do grupo."""
+        """
+        Ao criar uma prescrição, garante que o idoso e o medicamento
+        pertençam ao grupo especificado na URL.
+        """
+        grupo_pk = self.kwargs.get('grupo_pk')
         idoso_id = self.request.data.get('idoso_id')
-        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo=self.request.user.perfil.grupo)
-        serializer.save(idoso=idoso)
-
+        medicamento_id = self.request.data.get('medicamento_id')
+        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
+        medicamento = get_object_or_404(Medicamento, pk=medicamento_id, grupo_id=grupo_pk)
+        serializer.save(idoso=idoso, medicamento=medicamento)
+    
     @action(detail=True, methods=['post'], url_path='administrar')
-    @transaction.atomic # Garante que as operações com o banco de dados aconteçam juntas ou não aconteçam
-    def administrar(self, request, pk=None):
+    @transaction.atomic
+    # AQUI ESTÁ A CORREÇÃO: Adicionamos grupo_pk=None à assinatura do método
+    def administrar(self, request, pk=None, grupo_pk=None):
         """
         Cria um LogAdministracao para esta prescrição e decrementa o estoque do medicamento.
         """
@@ -270,7 +285,6 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Decrementa o estoque e cria o log de administração
         medicamento.quantidade_estoque -= 1
         medicamento.save()
 
@@ -285,42 +299,45 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
         return Response(log_serializer.data, status=status.HTTP_201_CREATED)
     
 
+
 class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet para visualizar usuários de um grupo e gerenciar suas responsabilidades
-    sobre os idosos. A criação de usuários é feita pelo endpoint de registro.
+    sobre os idosos.
     """
     serializer_class = PerfilUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
 
     def get_queryset(self):
-        """ Filtra para mostrar apenas os perfis de usuário do mesmo grupo. """
-        if self.request.user.perfil.grupo:
-            # Usamos PerfilUsuario como base para já ter acesso aos idosos responsáveis.
-            return PerfilUsuario.objects.filter(grupo=self.request.user.perfil.grupo)
+        """
+        Filtra para mostrar apenas os perfis de usuário do grupo
+        especificado na URL da rota aninhada.
+        """
+        grupo_pk = self.kwargs.get('grupo_pk')
+        if grupo_pk:
+            return PerfilUsuario.objects.filter(grupos__pk=grupo_pk)
         return PerfilUsuario.objects.none()
 
     @action(
         detail=True, 
         methods=['post'], 
         url_path='vincular-idoso',
-        permission_classes=[IsGroupAdmin] # Apenas admins podem vincular
+        permission_classes=[IsGroupMember]
     )
-    def vincular_idoso(self, request, pk=None):
+    # AQUI ESTÁ A CORREÇÃO: Adicionamos grupo_pk=None à assinatura
+    def vincular_idoso(self, request, pk=None, grupo_pk=None):
         """
-        Vincula um idoso à lista de responsabilidades de um usuário (enfermeiro).
-        Espera um 'idoso_id' no corpo da requisição.
+        Vincula um idoso à lista de responsabilidades de um usuário (cuidador).
         """
-        perfil_usuario_alvo = self.get_object() # O perfil do enfermeiro a ser modificado
+        perfil_usuario_alvo = self.get_object()
         idoso_id = request.data.get('idoso_id')
 
         if not idoso_id:
             return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Garante que o idoso a ser vinculado pertence ao mesmo grupo
-        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo=request.user.perfil.grupo)
+        # Garante que o idoso a ser vinculado pertence ao mesmo grupo da URL
+        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
 
-        # Adiciona o idoso à lista de responsabilidades
         perfil_usuario_alvo.responsaveis.add(idoso)
         
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
@@ -329,9 +346,10 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         detail=True, 
         methods=['post'], 
         url_path='desvincular-idoso',
-        permission_classes=[IsGroupAdmin] # Apenas admins podem desvincular
+        permission_classes=[IsGroupMember]
     )
-    def desvincular_idoso(self, request, pk=None):
+    # E AQUI TAMBÉM: Adicionamos grupo_pk=None à assinatura
+    def desvincular_idoso(self, request, pk=None, grupo_pk=None):
         """ Desvincula um idoso da lista de responsabilidades de um usuário. """
         perfil_usuario_alvo = self.get_object()
         idoso_id = request.data.get('idoso_id')
@@ -339,9 +357,9 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         if not idoso_id:
             return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
             
-        idoso = get_object_or_404(Idoso, pk=idoso_id)
+        # Garante que o idoso pertence ao grupo correto antes de desvincular
+        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
 
-        # Remove o idoso da lista de responsabilidades
         perfil_usuario_alvo.responsaveis.remove(idoso)
 
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)

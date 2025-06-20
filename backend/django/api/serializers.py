@@ -77,9 +77,13 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 class PerfilUsuarioSerializer(serializers.ModelSerializer):
     user = UsuarioSerializer(read_only=True)
+    # Garanta que o campo 'grupos' está aqui.
+    # Você pode querer usar um serializer mais simples para Grupo aqui para evitar aninhamento excessivo.
+    grupos = serializers.StringRelatedField(many=True, read_only=True)
+
     class Meta:
         model = PerfilUsuario
-        fields = ['user', 'permissao', 'responsaveis']
+        fields = ['user', 'permissao', 'responsaveis', 'grupos'] # <-- ADICIONE 'grupos'
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})

@@ -21,7 +21,9 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
+    # Rota para a interface de administração do Django
     path('admin/', admin.site.urls),
+
+    # Qualquer URL que comece com 'api/' será enviada para o arquivo 'api/urls.py'
     path('api/', include('api.urls')),
-    path('api/auth/', include('dj_rest_auth.urls')),
 ]
