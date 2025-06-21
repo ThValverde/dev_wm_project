@@ -1,40 +1,25 @@
-
+# api/permissions.py
 from rest_framework import permissions
 from .models import Grupo, PerfilUsuario
 
 class IsGroupAdmin(permissions.BasePermission):
     """
     Permissão customizada que verifica se o usuário é o admin de um grupo.
+    Aplica-se a nível de objeto.
     """
+    message = 'Apenas o administrador do grupo pode realizar esta ação.'
 
     def has_permission(self, request, view):
-
-        
-        if not request.user or not request.user.is_authenticated:
-            return False
-
-        if view.action == 'meu_grupo':
-            if not hasattr(request.user, 'perfil') or not request.user.perfil.grupo:
-                return False
-            
-            is_admin = request.user == request.user.perfil.grupo.admin
-            return is_admin
-        
-        return True
+        # A verificação básica de autenticação é suficiente aqui.
+        # A lógica principal será no has_object_permission.
+        return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-
-        if not hasattr(request.user, 'perfil'):
-            return False
-
-        grupo = obj if isinstance(obj, Grupo) else getattr(obj, 'grupo', None)
-        
-        if not grupo:
-             return False
-
-        is_admin = request.user == grupo.admin
-        
-        return is_admin
+        # A verificação é se o usuário da requisição é o admin do grupo.
+        # O 'obj' aqui será a instância do Grupo.
+        if isinstance(obj, Grupo):
+            return obj.admin == request.user
+        return False
 
 
 class IsGroupMember(permissions.BasePermission):
@@ -42,6 +27,8 @@ class IsGroupMember(permissions.BasePermission):
     Permite acesso apenas a usuários que são membros do grupo
     especificado na URL (para listas) ou no objeto (para detalhes).
     """
+    message = 'Você não é membro deste grupo.'
+    
     def has_permission(self, request, view):
         """
         Verifica a permissão a nível da view/lista, usando o grupo da URL.
@@ -55,14 +42,17 @@ class IsGroupMember(permissions.BasePermission):
             # Verifica se o usuário autenticado pertence ao grupo da URL
             return request.user.perfil.grupos.filter(pk=grupo_pk).exists()
         
-        # Permite o acesso a rotas não aninhadas (como /api/grupos/)
-        # desde que o usuário esteja logado.
+        # Para rotas não aninhadas (como /api/grupos/{pk}/), a verificação
+        # será feita a nível de objeto em `has_object_permission`.
         return True
 
     def has_object_permission(self, request, view, obj):
         """
         Verifica a permissão a nível de objeto (detalhe, update, delete).
         """
+        if not hasattr(request.user, 'perfil'):
+            return False
+            
         # Pega a lista de todos os grupos do usuário logado
         user_groups = request.user.perfil.grupos.all()
 
@@ -72,7 +62,7 @@ class IsGroupMember(permissions.BasePermission):
             target_group = obj
         elif isinstance(obj, PerfilUsuario): # Se o objeto for um perfil de usuário
             # A permissão é concedida se houver qualquer grupo em comum
-            return obj.grupos.filter(pk__in=user_groups).exists()
+            return obj.grupos.filter(pk__in=[g.pk for g in user_groups]).exists()
         elif hasattr(obj, 'grupo'):
             target_group = obj.grupo
         elif hasattr(obj, 'idoso') and hasattr(obj.idoso, 'grupo'):
@@ -83,4 +73,3 @@ class IsGroupMember(permissions.BasePermission):
 
         # A verificação principal: o grupo do objeto está na lista de grupos do usuário?
         return target_group in user_groups
-

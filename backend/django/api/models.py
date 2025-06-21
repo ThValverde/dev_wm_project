@@ -1,3 +1,4 @@
+# api/models.py
 
 from django.db import models        #módulo de modelos do Django para definir os modelos de dados
 import uuid                 #módulo uuid 
@@ -60,7 +61,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 # 1. Modelo para o Grupo
 class Grupo(models.Model):
-    radom_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="ID do Grupo")
     nome = models.CharField(max_length=100, verbose_name="Nome do Grupo", unique=True, help_text="Nome da casa de idosos")
     senha_hash = models.CharField(max_length=128)
     admin = models.ForeignKey(
@@ -69,7 +69,7 @@ class Grupo(models.Model):
         related_name='grupos_administrados', 
         verbose_name="Administrador do Grupo"
     )
-    codigo_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, unique_for_date = True, verbose_name="Código de Acesso do Grupo")
+    codigo_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Código de Acesso do Grupo")
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação do Grupo")
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name="Data de Atualização do Grupo")
 
@@ -85,7 +85,7 @@ class PerfilUsuario(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
     grupos = models.ManyToManyField(
         Grupo,
-        related_name="perfil_membros", # 'related_name' alterado para evitar conflito
+        related_name="membros", # <-- CORREÇÃO: 'related_name' alterado para 'membros' para corresponder ao serializer
         blank=True,
         verbose_name="Grupos do Usuário"
     )
@@ -298,8 +298,8 @@ class Prescricao(models.Model):
         ordering = ['horario_previsto']
 
     def __str__(self):
-        status = "Administrado" if self.foi_administrado else "Pendente"
-        return f"{self.medicamento.nome} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
+        # CORREÇÃO: Removida a referência ao campo 'foi_administrado' que não existe.
+        return f"{self.medicamento.nome_marca} para {self.idoso.nome_completo} às {self.horario_previsto.strftime('%H:%M')}"
 
 # 7. Modelo para Registro de administração de Medicamento   
 
@@ -316,7 +316,7 @@ class LogAdministracao(models.Model):
     observacoes = models.TextField(blank=True)
 
     def __str__(self):
-        return f"Dose de {self.prescricao.medicamento.nome} para {self.prescricao.idoso.nome_completo} em {self.data_hora_administracao.strftime('%d/%m/%y %H:%M')}"
+        return f"Dose de {self.prescricao.medicamento.nome_marca} para {self.prescricao.idoso.nome_completo} em {self.data_hora_administracao.strftime('%d/%m/%y %H:%M')}"
     
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def criar_perfil_usuario_apos_criar_usuario(sender, instance, created, **kwargs):

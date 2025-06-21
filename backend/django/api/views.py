@@ -91,31 +91,25 @@ class GrupoViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """
         Define permissões dinâmicas baseadas na ação para o Grupo.
-        Esta é a ÚNICA fonte de verdade para as permissões desta ViewSet.
         """
-        # Definimos uma lista padrão de permissões
         permission_classes = [permissions.IsAuthenticated]
 
-        # Regras para ver detalhes ou a lista
-        if self.action == 'retrieve' or self.action == 'meu_grupo':
-            permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
+        # Apenas membros podem ver detalhes do grupo
+        if self.action == 'retrieve':
+            permission_classes = [permissions.IsAuthenticated, IsGroupMember]
         
-        # Regras para ações de admin
-        elif self.action in ['update', 'partial_update', 'destroy', 'codigo_de_acesso']:
+        # Apenas o admin pode editar, deletar ou ver o código de acesso
+        elif self.action in ['update', 'partial_update', 'destroy', 'codigo_acesso']:
             permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
 
-        # O return instancia e retorna a lista de permissões que definimos acima.
         return [permission() for permission in permission_classes]
 
 
     def create(self, request, *args, **kwargs):
-        # Utiliza o serializer de criação para validar a entrada (nome, senha)
         serializer = self.get_serializer(data = request.data)
         serializer.is_valid(raise_exception=True)
-        # Chama o perform_create customizado para salvar e associar o admin ao grupo.
         self.perform_create(serializer)
         response_serializer = GrupoSerializer(serializer.instance, context=self.get_serializer_context())
-
         headers = self.get_success_headers(serializer.data)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
@@ -123,34 +117,26 @@ class GrupoViewSet(viewsets.ModelViewSet):
         """Define o usuário logado como administrador do grupo ao criar."""
         grupo = serializer.save(admin=self.request.user)
         perfil_usuario = PerfilUsuario.objects.get(user=self.request.user)
-        perfil_usuario.grupos.add(grupo) # <-- CORREÇÃO: Usa .add()
+        perfil_usuario.grupos.add(grupo)
         perfil_usuario.permissao = PerfilUsuario.Permissao.ADMIN
         perfil_usuario.save()
 
-
-    @action(detail=False, methods=['get'], url_path='meu-grupo')
-    def meu_grupo(self, request):
-        """Retorna os detalhes do grupo ao qual o usuário logado pertence."""
-        if not request.user.perfil.grupo:
+    @action(detail=False, methods=['get'], url_path='meus-grupos')
+    def meus_grupos(self, request):
+        """Retorna os detalhes dos grupos aos quais o usuário logado pertence."""
+        perfil_usuario = request.user.perfil
+        grupos = perfil_usuario.grupos.all()
+        if not grupos.exists():
             return Response({'detail': 'Você não pertence a nenhum grupo.'}, status=status.HTTP_404_NOT_FOUND)
         
-        grupo = request.user.perfil.grupo
-        serializer = self.get_serializer(grupo)
+        serializer = self.get_serializer(grupos, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'], url_path='codigo-de-acesso')
     def codigo_acesso(self, request, pk=None):
-        print(f"--- AÇÃO 'codigo_de_acesso' FOI CHAMADA PELO USUÁRIO: {request.user} ---")
+        """Retorna o código de acesso do grupo. Apenas para o admin."""
         grupo = self.get_object()
-
-        # VERIFICAÇÃO MANUAL E EXPLÍCITA
-        if request.user != grupo.admin:
-            print(f"--- ACESSO NEGADO: ...")
-            self.permission_denied(
-                request, message='Apenas o administrador do grupo pode ver o código de acesso.'
-            )
-        
-        print(f"--- ACESSO PERMITIDO: ...")
+        # A verificação de permissão agora é tratada por get_permissions e IsGroupAdmin
         return Response({'codigo_acesso': grupo.codigo_acesso})
     
     @action(detail=False, methods=['post'], url_path='entrar-com-codigo')
@@ -163,7 +149,6 @@ class GrupoViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Código de acesso não fornecido.'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            # Buscamos o grupo pelo código de acesso
             grupo = Grupo.objects.get(codigo_acesso=codigo)
         except Grupo.DoesNotExist:
             return Response({'detail': 'Grupo com este código de acesso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
@@ -172,10 +157,9 @@ class GrupoViewSet(viewsets.ModelViewSet):
         if grupo in perfil_usuario.grupos.all():
             return Response({'detail': f'Você já é membro do grupo {grupo.nome}.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        perfil_usuario.grupos.add(grupo)  # Adiciona o grupo aos grupos do usuário
-        if not perfil_usuario.permissao:
+        perfil_usuario.grupos.add(grupo)
+        if not perfil_usuario.permissao: # Define como membro apenas se não tiver uma permissão
             perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO
-
         perfil_usuario.save()
 
         return Response({'detail': f'Bem-vindo ao grupo {grupo.nome}!'}, status=status.HTTP_200_OK)
@@ -183,36 +167,29 @@ class GrupoViewSet(viewsets.ModelViewSet):
 # --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
 
 class IdosoViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+
     def get_serializer_class(self):
-        """
-        Retorna um serializer diferente para a ação 'list' e outro
-        para as demais ações (retrieve, create, update).
-        """
         if self.action == 'list':
             return IdosoListSerializer
         return IdosoDetailSerializer
+
     def get_queryset(self):
         """
         Filtra o queryset para retornar apenas idosos do grupo 
         especificado na URL da rota aninhada.
         """
-        # Pega o ID do grupo que vem da URL, ex: /api/grupos/5/idosos/
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
-            # Filtra os idosos pelo ID do grupo da URL
             return Idoso.objects.filter(grupo_id=grupo_pk)
-        # Se por algum motivo não houver grupo_pk, não retorna nada.
         return Idoso.objects.none()
 
     def perform_create(self, serializer):
         """
         Ao criar um idoso, associa-o ao grupo especificado na URL.
         """
-        # Pega o ID do grupo da URL
         grupo_pk = self.kwargs.get('grupo_pk')
-        # Busca o objeto Grupo para garantir que ele existe
         grupo = get_object_or_404(Grupo, pk=grupo_pk)
-        # Salva o novo idoso, associando ao grupo correto
         serializer.save(grupo=grupo)
 
 class MedicamentoViewSet(viewsets.ModelViewSet):
@@ -224,7 +201,6 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
         """
         Filtra para retornar apenas medicamentos do grupo especificado na URL.
         """
-        # Pega o ID do grupo da URL
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             return Medicamento.objects.filter(grupo_id=grupo_pk)
@@ -234,10 +210,8 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
         """
         Ao criar um medicamento, associa-o ao grupo especificado na URL.
         """
-        # Pega o ID do grupo da URL
         grupo_pk = self.kwargs.get('grupo_pk')
         grupo = get_object_or_404(Grupo, pk=grupo_pk)
-        # Salva o novo medicamento associando ao grupo correto
         serializer.save(grupo=grupo)
 
 
@@ -271,7 +245,6 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'], url_path='administrar')
     @transaction.atomic
-    # AQUI ESTÁ A CORREÇÃO: Adicionamos grupo_pk=None à assinatura do método
     def administrar(self, request, pk=None, grupo_pk=None):
         """
         Cria um LogAdministracao para esta prescrição e decrementa o estoque do medicamento.
@@ -315,7 +288,9 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         """
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
-            return PerfilUsuario.objects.filter(grupos__pk=grupo_pk)
+            # CORREÇÃO: Usa o related_name 'membros' definido no modelo PerfilUsuario
+            grupo = get_object_or_404(Grupo, pk=grupo_pk)
+            return grupo.membros.all()
         return PerfilUsuario.objects.none()
 
     @action(
@@ -324,7 +299,6 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         url_path='vincular-idoso',
         permission_classes=[IsGroupMember]
     )
-    # AQUI ESTÁ A CORREÇÃO: Adicionamos grupo_pk=None à assinatura
     def vincular_idoso(self, request, pk=None, grupo_pk=None):
         """
         Vincula um idoso à lista de responsabilidades de um usuário (cuidador).
@@ -348,7 +322,6 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         url_path='desvincular-idoso',
         permission_classes=[IsGroupMember]
     )
-    # E AQUI TAMBÉM: Adicionamos grupo_pk=None à assinatura
     def desvincular_idoso(self, request, pk=None, grupo_pk=None):
         """ Desvincula um idoso da lista de responsabilidades de um usuário. """
         perfil_usuario_alvo = self.get_object()
