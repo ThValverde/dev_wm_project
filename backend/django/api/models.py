@@ -310,7 +310,7 @@ class LogAdministracao(models.Model):
         PULADO = 'PUL', 'Pulado/Esquecido'
 
     prescricao = models.ForeignKey(Prescricao, on_delete=models.CASCADE, related_name="logs_de_administracao")
-    data_hora_administracao = models.DateTimeField(auto_now_add=True)
+    data_hora_administracao = models.DateTimeField(default = timezone.now, verbose_name="Data e Hora da Administração")
     status = models.CharField(max_length=3, choices=StatusDose.choices, default=StatusDose.ADMINISTRADO)
     usuario_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     observacoes = models.TextField(blank=True)

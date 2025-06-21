@@ -247,7 +247,9 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def administrar(self, request, pk=None, grupo_pk=None):
         """
-        Cria um LogAdministracao para esta prescrição e decrementa o estoque do medicamento.
+        Cria um LogAdministracao para esta prescrição e decrementa o estoque.
+        Permite fornecer uma 'data_hora_administracao' (formato ISO) no corpo
+        da requisição para registros retroativos. Se não for fornecida, usa a data/hora atual.
         """
         prescricao = self.get_object()
         medicamento = prescricao.medicamento
@@ -261,12 +263,33 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
         medicamento.quantidade_estoque -= 1
         medicamento.save()
 
-        log = LogAdministracao.objects.create(
-            prescricao=prescricao,
-            usuario_responsavel=request.user,
-            status=request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO),
-            observacoes=request.data.get('observacoes', '')
-        )
+        # Prepara os dados base para o log de administração
+        log_data = {
+            "prescricao": prescricao,
+            "usuario_responsavel": request.user,
+            "status": request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO),
+            "observacoes": request.data.get('observacoes', '')
+        }
+
+        # Verifica se o cliente enviou uma data/hora específica
+        custom_datetime_str = request.data.get('data_hora_administracao')
+        if custom_datetime_str:
+            try:
+                # Converte a string (formato ISO) para um objeto datetime
+                custom_datetime = parse_datetime(custom_datetime_str)
+                if not custom_datetime: # parse_datetime retorna None se o formato for inválido
+                    raise ValueError
+                # Adiciona a data customizada aos dados do log
+                log_data['data_hora_administracao'] = custom_datetime
+            except (ValueError, TypeError):
+                return Response(
+                    {'error': 'O formato de data_hora_administracao é inválido. Use o formato ISO (ex: YYYY-MM-DDTHH:MM:SSZ).'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Cria o Log com os dados preparados. Se 'data_hora_administracao' não estiver
+        # em log_data, o modelo usará o valor 'default=timezone.now'.
+        log = LogAdministracao.objects.create(**log_data)
 
         log_serializer = LogAdministracaoSerializer(log)
         return Response(log_serializer.data, status=status.HTTP_201_CREATED)
