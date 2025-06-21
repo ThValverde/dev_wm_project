@@ -50,7 +50,10 @@ class PrescricaoSerializer(serializers.ModelSerializer):
         model = Prescricao
         fields = [
             'id', 'idoso', 'idoso_id', 'medicamento', 'medicamento_id',
-            'horario_previsto', 'dosagem', 'instrucoes', 'ativo'
+            'horario_previsto', 'dosagem', 'instrucoes', 'ativo',
+            'frequencia',  # <-- Novo campo
+            'dia_domingo', 'dia_segunda', 'dia_terca', 'dia_quarta', # <-- Novos campos
+            'dia_quinta', 'dia_sexta', 'dia_sabado'                 # <-- Novos campos
         ]
 
 

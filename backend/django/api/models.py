@@ -184,6 +184,7 @@ class Medicamento(models.Model):
         MICROGRAMA_POR_GRAMA = 'mcg/g', 'mcg/g'
         MILIGRAMA_POR_GRAMA = 'mg/g', 'mg/g'
         MG_POR_ML = 'mg/ml', 'mg/ml'
+        UNIDADE = 'UN', 'Unidade'
         OUTRO = 'OUT', 'Outro'
 
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE, related_name='medicamentos')
@@ -263,12 +264,33 @@ class Medicamento(models.Model):
     
 # 6. Modelo para Prescricao de Medicamentos
 class Prescricao(models.Model):
+    class FrequenciaChoices(models.TextChoices):
+        DIARIA = 'DI', 'Diária'
+        SEMANAL = 'SE', 'Semanal'
+        MENSAL = 'ME', 'Mensal'
+        EVENTUAL = 'EV', 'Eventual'
+    frequencia = models.CharField(
+        max_length=2, 
+        choices=FrequenciaChoices.choices, 
+        default=FrequenciaChoices.DIARIA,
+        verbose_name="Frequência da Dose"
+    )
+    dia_domingo = models.BooleanField(default=False, verbose_name="Domingo")
+    dia_segunda = models.BooleanField(default=False, verbose_name="Segunda-feira")
+    dia_terca = models.BooleanField(default=False, verbose_name="Terça-feira")
+    dia_quarta = models.BooleanField(default=False, verbose_name="Quarta-feira")
+    dia_quinta = models.BooleanField(default=False, verbose_name="Quinta-feira")
+    dia_sexta = models.BooleanField(default=False, verbose_name="Sexta-feira")
+    dia_sabado = models.BooleanField(default=False, verbose_name="Sábado")
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
     medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT) # Proteger para não deletar um medicamento em uso
     horario_previsto = models.TimeField(verbose_name="Horário da Dose") # Ex: 08:00, 14:00, 22:00
     dosagem = models.CharField(max_length=100, help_text="Ex: 1 comprimido, 5ml, 2 gotas")
     instrucoes = models.TextField(blank=True, help_text="Ex: Administrar com alimentos.")
     ativo = models.BooleanField(default=True, help_text="Desmarque para suspender esta prescrição.")
+
+
+
 
     class Meta:
         verbose_name = "Prescrição"
