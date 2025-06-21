@@ -14,7 +14,7 @@ function NavBar() {
         <TouchableOpacity onPress={() => navigation.navigate('Estoque')}>
           <Text style={styles.navLink}>Estoque</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Horarios')}>
+        <TouchableOpacity onPress={() => navigation.navigate("Horarios")}>
           <Text style={styles.navLink}>Horários</Text>
         </TouchableOpacity>
       </View>
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
   navLink: {
-    color: '#fff',
+    color: '#ffff',
     fontSize: 18,
     marginHorizontal: 12,
     fontWeight: 'bold',

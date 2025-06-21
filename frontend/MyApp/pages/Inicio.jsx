@@ -19,7 +19,8 @@ function ListaDeIdosos({ idosos, navigation }) {
             key={idoso.id}
             style={styles.card}
             onPress={() =>
-              navigation.navigate('Dados', { idoso: idoso })
+              navigation.navigate('Dados',
+                {idoso: idoso })
             }
           >
             {/* Imagem padrão, adicionar foto a idoso */}

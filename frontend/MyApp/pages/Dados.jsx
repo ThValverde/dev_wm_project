@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +37,6 @@ function getPlanoSaudeDisplay(idoso) {
     return planos[idoso.plano_saude] || 'Não informado';
 }
 
-
 function Dados({ route, navigation }) {
   const { idoso } = route.params;
 
@@ -66,6 +65,32 @@ function Dados({ route, navigation }) {
             style={styles.profileImage} 
           />
           <Text style={styles.profileName}>{idoso.nome_completo}</Text>
+        </View>
+
+        <View style={styles.screenView}>
+          <TouchableOpacity
+          style={styles.screenViewButtons}
+          onPress={() => 
+            navigation.navigate('Dados',
+              {idoso : idoso}
+            )}
+          >
+            <Text style={styles.screenViewText}>
+              Dados
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+          style={styles.screenViewButtons}
+          onPress={() => 
+            navigation.navigate('Prescricoes',
+              {idoso : idoso}
+            )}
+          >
+            <Text style={styles.screenViewText}>
+              Prescricoes
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoCard}>
@@ -219,6 +244,30 @@ const styles = StyleSheet.create({
       fontStyle: 'italic',
       textAlign: 'center'
     },
+    screenView: {
+      flexDirection: 'row',
+      margin: 8,
+      justifyContent: 'center',
+      gap: 20
+    },
+    screenViewButtons: {
+      backgroundColor: '#fff',
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      width: 180,
+    },
+    screenViewText: {
+      fontSize: 18,
+      fontWeight: 'bold', 
+      color: "#2c3e50",
+      alignSelf: 'center'
+    }
 });
 
 export default Dados;

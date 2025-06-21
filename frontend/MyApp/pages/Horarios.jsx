@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import NavBar from '../components/NavBar';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 // Dados de exemplo (serão substituídos por dados do backend futuramente)
 const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -56,10 +59,44 @@ const MEDICAMENTOS_HORARIOS = [
   },
 ];
 
-function Horario({ navigation }) {
+function Horarios() {
   const hoje = new Date();
   const [diaAtual, setDiaAtual] = useState(hoje.getDay());
   const [mostrarPerfil, setMostrarPerfil] = useState(null);
+  const [horarios, setHorarios] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+
+   useEffect(() => {
+    const buscarHorarios = async () => {
+      try {
+        // 1. Pega o token salvo no dispositivo durante o login
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('Token de autenticação não encontrado. Faça o login novamente.');
+        }
+
+        // 2. Faz a requisição GET para a API, enviando o token no cabeçalho (Header)
+        const response = await axios.get(`${baseURL}/api/prescricoes/`, {
+          headers: {
+            'Authorization': `Token ${token}`
+          }
+        });
+
+        // 3. Salva a lista de idosos recebida no estado do componente
+        setHorarios(response.data.map( h => h));
+
+      } catch (err) {
+        console.error("Erro ao buscar horarios:", err.response ? err.response.data : err.message);
+        setErro('Não foi possível carregar os dados dos horarios.');
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    buscarHorarios();
+  }, []); // O array vazio [] garante que esta função rode apenas uma vez quando a tela montar
+  
 
   // Filtrar medicamentos para o dia selecionado
   const medicamentosDoDia = MEDICAMENTOS_HORARIOS.filter(med => 
@@ -92,6 +129,21 @@ function Horario({ navigation }) {
           <TouchableOpacity onPress={() => mudarDia(1)} style={styles.dateButton}>
             <Ionicons name="chevron-forward" size={24} color="white" />
           </TouchableOpacity>
+        </View>
+
+
+        <View>
+
+        {horarios.map(h => {
+
+          return(
+            <View>
+              {h.id} opa {h.dosagem}
+            </View>
+          )
+
+        })}
+
         </View>
 
         {/* Lista de medicamentos */}
@@ -259,4 +311,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default Horario;
+export default Horarios;

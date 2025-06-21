@@ -5,8 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import NavBar from '../components/NavBar';
 import Estoque from '../pages/Estoque';
 import Inicio from '../pages/Inicio';
-import Horario from '../pages/Horario';
+import Horarios from '../pages/Horarios';
 import Dados from '../pages/Dados';
+import Prescricoes from '../pages/Prescricoes';
 import Login from '../pages/Login';
 import Cadastro from '../pages/Cadastro';
 
@@ -20,7 +21,7 @@ function ScreenWrapper({ children, route, navigation }) {
     return children;
   }
   
-  // Nas outras telas, mostra navbar
+  // Nas outras telas, mostra navbar  
   return (
     <View style={styles.container}>
       <NavBar navigation={navigation} />
@@ -71,10 +72,10 @@ function App() {
             </ScreenWrapper>
           )}
         </Stack.Screen>
-        <Stack.Screen name="Horários">
+        <Stack.Screen name="Horarios">
           {(props) => (
             <ScreenWrapper {...props}>
-              <Horario {...props} />
+              <Horarios {...props} />
             </ScreenWrapper>
           )}
         </Stack.Screen>
@@ -82,6 +83,13 @@ function App() {
           {(props) => (
             <ScreenWrapper {...props}>
               <Dados {...props} />
+            </ScreenWrapper>
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Prescricoes">
+          {(props) => (
+            <ScreenWrapper {...props}>
+              <Prescricoes {...props} />
             </ScreenWrapper>
           )}
         </Stack.Screen>
