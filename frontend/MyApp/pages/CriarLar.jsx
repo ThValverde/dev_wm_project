@@ -8,276 +8,179 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 export default function CriarLar({ navigation }) {
+  // Estado para os campos do formulário
   const [nomeLar, setNomeLar] = useState('');
+  const [senha, setSenha] = useState('');
   const [endereco, setEndereco] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
   const [cep, setCep] = useState('');
   const [telefone, setTelefone] = useState('');
-  const [capacidade, setCapacidade] = useState('');
   const [responsavel, setResponsavel] = useState('');
-  const [emailResponsavel, setEmailResponsavel] = useState('');
+  const [codigoAcesso, setCodigoAcesso] = useState('');
+  
+  // Estado para controle da UI
   const [carregando, setCarregando] = useState(false);
-
-  const validarEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
-  const validarCEP = (cep) => {
-    const regex = /^\d{5}-?\d{3}$/;
-    return regex.test(cep);
-  };
-
-  const formatarTelefone = (telefone) => {
-    // Remove tudo que não é número
-    const apenasNumeros = telefone.replace(/\D/g, '');
-    
-    // Aplica a máscara (xx) xxxxx-xxxx
-    if (apenasNumeros.length <= 11) {
-      return apenasNumeros.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    }
-    return telefone;
-  };
-
-  const formatarCEP = (cep) => {
-    const apenasNumeros = cep.replace(/\D/g, '');
-    if (apenasNumeros.length <= 8) {
-      return apenasNumeros.replace(/(\d{5})(\d{3})/, '$1-$2');
-    }
-    return cep;
-  };
+  const [abaAtiva, setAbaAtiva] = useState('criar'); // 'criar' ou 'entrar'
 
   const handleCriarLar = async () => {
-    // Validações
-    if (!nomeLar.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o nome do lar');
-      return;
-    }
-
-    if (!endereco.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o endereço');
-      return;
-    }
-
-    if (!cidade.trim()) {
-      Alert.alert('Erro', 'Por favor, informe a cidade');
-      return;
-    }
-
-    if (!estado.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o estado');
-      return;
-    }
-
-    if (!validarCEP(cep)) {
-      Alert.alert('Erro', 'Por favor, informe um CEP válido');
-      return;
-    }
-
-    if (!telefone.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o telefone');
-      return;
-    }
-
-    if (!capacidade.trim() || isNaN(capacidade) || parseInt(capacidade) <= 0) {
-      Alert.alert('Erro', 'Por favor, informe uma capacidade válida');
-      return;
-    }
-
-    if (!responsavel.trim()) {
-      Alert.alert('Erro', 'Por favor, informe o nome do responsável');
-      return;
-    }
-
-    if (!validarEmail(emailResponsavel)) {
-      Alert.alert('Erro', 'Por favor, informe um e-mail válido para o responsável');
+    if (!nomeLar.trim() || !senha.trim() || !responsavel.trim()) {
+      Alert.alert('Erro de Validação', 'Nome do Lar, Senha e Nome do Responsável são obrigatórios.');
       return;
     }
 
     setCarregando(true);
-
     try {
-      // Simular chamada da API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) throw new Error("Token de autenticação não encontrado.");
 
+      const payload = {
+        nome: nomeLar,
+        senha: senha,
+        endereco: endereco,
+        telefone: telefone,
+        cidade: cidade,
+        estado: estado,
+        cep: cep,
+        nome_responsavel: responsavel,
+      };
+
+      await axios.post(`${baseURL}/api/grupos/`, payload, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
+      
+      // CORREÇÃO: Navegação ocorre ANTES do alerta.
+      navigation.goBack();
       Alert.alert(
         'Sucesso!',
-        'Lar criado com sucesso!',
-        [
-          { 
-            text: 'OK', 
-            onPress: () => navigation.goBack() 
-          }
-        ]
+        'Lar criado com sucesso. Você já pode selecioná-lo na tela anterior.'
       );
+
     } catch (error) {
-      Alert.alert('Erro', 'Falha ao criar o lar. Tente novamente.');
+      const errorMsg = error.response?.data?.nome?.[0] || 'Falha ao criar o lar. Verifique os dados e tente novamente.';
+      Alert.alert('Erro na Criação', errorMsg);
     } finally {
       setCarregando(false);
     }
   };
 
+  const handleEntrarComCodigo = async () => {
+    if (!codigoAcesso.trim()) {
+      Alert.alert('Erro', 'Por favor, informe o código de acesso.');
+      return;
+    }
+    setCarregando(true);
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) throw new Error("Token não encontrado.");
+
+      await axios.post(`${baseURL}/api/grupos/entrar-com-codigo/`, {
+        codigo_acesso: codigoAcesso,
+      }, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
+
+      // CORREÇÃO: Navegação ocorre ANTES do alerta.
+      navigation.goBack();
+      Alert.alert(
+        'Sucesso!',
+        'Você entrou no lar com sucesso!'
+      );
+      
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Código inválido ou falha na conexão.';
+      Alert.alert('Erro', errorMsg);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  // --- RENDERIZAÇÃO CONDICIONAL DOS FORMULÁRIOS ---
+
+  const renderFormularioCriar = () => (
+    <>
+      <Text style={styles.sectionTitle}>Informações do Lar</Text>
+      <TextInput style={styles.input} placeholder="Nome do Lar*" value={nomeLar} onChangeText={setNomeLar} />
+      <TextInput style={styles.input} placeholder="Senha do Lar*" value={senha} onChangeText={setSenha} secureTextEntry />
+      <TextInput style={styles.input} placeholder="Nome do Responsável*" value={responsavel} onChangeText={setResponsavel} />
+      <Text style={styles.sectionTitle}>Endereço e Contato (Opcional)</Text>
+      <TextInput style={styles.input} placeholder="Endereço completo" value={endereco} onChangeText={setEndereco} />
+      <TextInput style={styles.input} placeholder="Cidade" value={cidade} onChangeText={setCidade} />
+      <TextInput style={styles.input} placeholder="Estado (UF)" value={estado} onChangeText={setEstado} maxLength={2} autoCapitalize="characters" />
+      <TextInput style={styles.input} placeholder="CEP" value={cep} onChangeText={setCep} keyboardType="numeric" />
+      <TextInput style={styles.input} placeholder="Telefone" value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" />
+      <TouchableOpacity
+        style={[styles.actionButton, carregando && styles.buttonDisabled]}
+        onPress={handleCriarLar}
+        disabled={carregando}
+      >
+        {carregando ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>Criar Lar</Text>}
+      </TouchableOpacity>
+    </>
+  );
+
+  const renderFormularioEntrar = () => (
+    <>
+      <Text style={styles.sectionTitle}>Entrar com Código</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Digite o código de acesso do lar"
+        value={codigoAcesso}
+        onChangeText={setCodigoAcesso}
+        autoCapitalize="none"
+      />
+      <TouchableOpacity
+        style={[styles.actionButton, carregando && styles.buttonDisabled]}
+        onPress={handleEntrarComCodigo}
+        disabled={carregando}
+      >
+        {carregando ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>Entrar no Lar</Text>}
+      </TouchableOpacity>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={{ flex: 1 }}
       >
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Criar Novo Lar</Text>
-          <View style={styles.placeholder} />
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Gerenciar Lares</Text>
+            <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.tabContainer}>
+            <TouchableOpacity 
+                style={[styles.tabButton, abaAtiva === 'criar' && styles.tabActive]}
+                onPress={() => setAbaAtiva('criar')}
+            >
+                <Text style={[styles.tabText, abaAtiva === 'criar' && styles.tabTextActive]}>CRIAR LAR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                style={[styles.tabButton, abaAtiva === 'entrar' && styles.tabActive]}
+                onPress={() => setAbaAtiva('entrar')}
+            >
+                <Text style={[styles.tabText, abaAtiva === 'entrar' && styles.tabTextActive]}>ENTRAR COM CÓDIGO</Text>
+            </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.formContainer}>
-            
-            {/* Informações Básicas */}
-            <Text style={styles.sectionTitle}>Informações Básicas</Text>
-            
-            <View style={styles.inputContainer}>
-              <Ionicons name="home-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nome do Lar"
-                placeholderTextColor="#bdc3c7"
-                value={nomeLar}
-                onChangeText={setNomeLar}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="people-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Capacidade (número de residentes)"
-                placeholderTextColor="#bdc3c7"
-                value={capacidade}
-                onChangeText={setCapacidade}
-                keyboardType="numeric"
-              />
-            </View>
-
-            {/* Endereço */}
-            <Text style={styles.sectionTitle}>Endereço</Text>
-            
-            <View style={styles.inputContainer}>
-              <Ionicons name="location-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Endereço completo"
-                placeholderTextColor="#bdc3c7"
-                value={endereco}
-                onChangeText={setEndereco}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.rowContainer}>
-              <View style={[styles.inputContainer, styles.inputHalf]}>
-                <Ionicons name="business-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Cidade"
-                  placeholderTextColor="#bdc3c7"
-                  value={cidade}
-                  onChangeText={setCidade}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              <View style={[styles.inputContainer, styles.inputHalf]}>
-                <Ionicons name="map-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Estado"
-                  placeholderTextColor="#bdc3c7"
-                  value={estado}
-                  onChangeText={setEstado}
-                  autoCapitalize="characters"
-                  maxLength={2}
-                />
-              </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="CEP"
-                placeholderTextColor="#bdc3c7"
-                value={cep}
-                onChangeText={(text) => setCep(formatarCEP(text))}
-                keyboardType="numeric"
-                maxLength={9}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="call-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Telefone"
-                placeholderTextColor="#bdc3c7"
-                value={telefone}
-                onChangeText={(text) => setTelefone(formatarTelefone(text))}
-                keyboardType="phone-pad"
-                maxLength={15}
-              />
-            </View>
-
-            {/* Responsável */}
-            <Text style={styles.sectionTitle}>Responsável</Text>
-            
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nome do responsável"
-                placeholderTextColor="#bdc3c7"
-                value={responsavel}
-                onChangeText={setResponsavel}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="E-mail do responsável"
-                placeholderTextColor="#bdc3c7"
-                value={emailResponsavel}
-                onChangeText={setEmailResponsavel}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.criarButton, carregando && styles.criarButtonDisabled]}
-              onPress={handleCriarLar}
-              disabled={carregando}
-            >
-              <Text style={styles.criarButtonText}>
-                {carregando ? 'Criando...' : 'Criar Lar'}
-              </Text>
-            </TouchableOpacity>
+            {abaAtiva === 'criar' ? renderFormularioCriar() : renderFormularioEntrar()}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -286,13 +189,7 @@ export default function CriarLar({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  keyboardView: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#f0f4f7' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -300,84 +197,59 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#2c3e50',
   },
-  backButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  backButton: { padding: 4 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginTop: -15,
+    borderRadius: 12,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+  tabButton: {
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  placeholder: {
-    width: 40,
+  tabActive: {
+    backgroundColor: '#3498db',
+    borderRadius: 12,
   },
-  scrollContainer: {
-    padding: 20,
-  },
+  tabText: { color: '#7f8c8d', fontWeight: 'bold' },
+  tabTextActive: { color: '#fff' },
+  scrollContainer: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 10 },
   formContainer: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 16,
-    marginTop: 20,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    padding: 24,
+    marginTop: 10,
   },
-  inputHalf: {
-    flex: 1,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 20, textAlign: 'center' },
   input: {
-    flex: 1,
+    backgroundColor: '#f0f4f7',
+    borderRadius: 10,
+    paddingHorizontal: 15,
     height: 50,
     fontSize: 16,
-    color: '#2c3e50',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e1e5e8',
+    color: '#333'
   },
-  criarButton: {
+  actionButton: {
     backgroundColor: '#27ae60',
-    borderRadius: 12,
+    borderRadius: 10,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 30,
-    shadowColor: '#27ae60',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    marginTop: 20,
   },
-  criarButtonDisabled: {
-    backgroundColor: '#bdc3c7',
-  },
-  criarButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  buttonDisabled: { backgroundColor: '#bdc3c7' },
+  actionButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
 });

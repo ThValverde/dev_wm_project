@@ -72,6 +72,18 @@ class Grupo(models.Model):
     codigo_acesso = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Código de Acesso do Grupo")
     data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação do Grupo")
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name="Data de Atualização do Grupo")
+    
+    endereco = models.CharField(max_length=255, blank=True, verbose_name="Endereço do Grupo", help_text="Endereço da casa de idosos")
+    telefone = models.CharField(max_length=20, blank=True, verbose_name="Telefone do Grupo", help_text="Telefone de contato da casa de idosos")
+    cidade = models.CharField(max_length=100, blank=True, verbose_name="Cidade do Grupo", help_text="Cidade onde a casa de idosos está localizada")
+    estado = models.CharField(max_length=100, blank=True, verbose_name="Estado do Grupo", help_text="Estado onde a casa de idosos está localizada")
+    cep = models.CharField(max_length=10, blank=True, verbose_name="CEP do Grupo", help_text="CEP da casa de idosos")
+    nome_responsavel = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Nome do Responsável",
+        help_text="Nome do responsável pela casa de idosos"
+    )
 
     def __str__(self):
         return self.nome

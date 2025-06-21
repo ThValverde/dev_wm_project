@@ -1,15 +1,14 @@
-// App.jsx - Versão com o botão de menu manual
+// App.jsx
 
 import 'react-native-gesture-handler';
-
 import React from 'react';
-// IMPORTAÇÕES ADICIONAIS PARA O BOTÃO
-import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-import { NavigationContainer } from '@react-navigation/native';
+// ALTERAÇÃO: Importar CommonActions para a ação de reset
+import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createDrawerNavigator, DrawerItemList } from '@react-navigation/drawer'; 
+import { Alert, TouchableOpacity, View, Text, Platform } from 'react-native'; // Platform já estava aqui
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- Importação das suas telas (pages) ---
 import Login from '../pages/Login';
@@ -18,38 +17,101 @@ import Inicio from '../pages/Inicio';
 import Estoque from '../pages/Estoque';
 import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
-import Login from '../pages/Login';
-import Cadastro from '../pages/Cadastro';
 import SelecionarLar from '../pages/SelecionarLar';
 import CriarLar from '../pages/CriarLar';
 
-// --- Criação dos navegadores ---
 const Stack = createNativeStackNavigator();
+const Drawer = createDrawerNavigator();
 
-function ScreenWrapper({ children, route, navigation }) {
-  const isLoginScreen = route.name === 'Login' || route.name === 'Cadastro';
-  
-  if (isLoginScreen) {
-    // Na tela de Login, não mostra navbar
-    return children;
-  }
-  
-  // Para SelecionarLar, renderize sem NavBar mas garantindo que receba navigation
-  if (route.name === 'SelecionarLar' || route.name === 'CriarLar') {
-    return (
-      <View style={{ flex: 1 }}>
-        {React.cloneElement(children, { navigation })}
-      </View>
-    );
-  }
+// Componente para renderizar o conteúdo customizado do menu lateral
+function CustomDrawerContent(props) {
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Renderiza os links padrões (Início, Estoque, etc.) */}
+      <DrawerItemList {...props} />
+      
+      {/* NOVO: Botão para retornar à tela de seleção de lar */}
+      <TouchableOpacity
+        style={{ paddingHorizontal: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#eee' }}
+        onPress={() => {
+          // Reseta a pilha de navegação para a tela SelecionarLar
+          props.navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'SelecionarLar' }],
+            })
+          );
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="swap-horizontal-outline" size={22} color="#333" />
+          <Text style={{ marginLeft: 30, fontWeight: 'bold', color: '#333' }}>
+            Trocar de Lar
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-  // Nas outras telas, mostra navbar
+      {/* Botão customizado de Sair (com a sua correção para web) */}
+      <TouchableOpacity
+        style={{ padding: 20 }}
+        onPress={async () => {
+          const logout = async () => {
+            await AsyncStorage.multiRemove(['authToken', 'selectedGroupId']);
+            // A ação de reset leva o usuário para a tela de Login
+            props.navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            );
+          };
+
+          if (Platform.OS === 'web') {
+            if (window.confirm('Tem certeza que deseja sair do aplicativo?')) {
+              await logout();
+            }
+          } else {
+            Alert.alert(
+              'Sair',
+              'Tem certeza que deseja sair do aplicativo?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { 
+                  text: 'Sair', 
+                  style: 'destructive',
+                  onPress: logout
+                }
+              ]
+            );
+          }
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="log-out-outline" size={22} color="#333" />
+          <Text style={{ marginLeft: 30, fontWeight: 'bold', color: '#333' }}>
+            Sair
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+
+function MainDrawerNavigator() {
   return (
     <Drawer.Navigator
+      initialRouteName="Início"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerStyle: { backgroundColor: '#2c3e50' },
+        headerTintColor: '#fff',
+        headerTitleStyle: { fontWeight: 'bold' },
+      }}
     >
-      <Drawer.Screen name="AppScreens" component={AppStack} />
+      <Drawer.Screen name="Início" component={Inicio} />
+      <Drawer.Screen name="Estoque" component={Estoque} />
+      <Drawer.Screen name="Horários" component={Horario} />
     </Drawer.Navigator>
   );
 }
@@ -61,68 +123,27 @@ function App() {
         initialRouteName="Login"
         screenOptions={{ headerShown: false }} 
       >
-        <Stack.Screen name="Login">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Login {...props} />
-            </ScreenWrapper>
-          )}
-      
-        </Stack.Screen>
-
-        <Stack.Screen name="SelecionarLar">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <SelecionarLar {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-
-        <Stack.Screen name="CriarLar">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <CriarLar {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-
-        <Stack.Screen name="Cadastro">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Cadastro {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-
-
-        <Stack.Screen name="Inicio">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Inicio {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="Estoque">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Estoque {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="Horários">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Horario {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
-        <Stack.Screen name="Dados">
-          {(props) => (
-            <ScreenWrapper {...props}>
-              <Dados {...props} />
-            </ScreenWrapper>
-          )}
-        </Stack.Screen>
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Cadastro" component={Cadastro} />
+        <Stack.Screen name="SelecionarLar" component={SelecionarLar} />
+        <Stack.Screen 
+          name="CriarLar" 
+          component={CriarLar}
+        />
+        <Stack.Screen
+          name="Main"
+          component={MainDrawerNavigator}
+        />
+        <Stack.Screen 
+          name="Dados" 
+          component={Dados}
+          options={{ 
+            headerShown: true,
+            title: 'Detalhes do Idoso',
+            headerStyle: { backgroundColor: '#2c3e50' },
+            headerTintColor: '#fff',
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -147,16 +147,23 @@ class GrupoSerializer(serializers.ModelSerializer):
     admin = UsuarioSerializer(read_only=True)
     class Meta:
         model = Grupo
-        fields = ['id', 'nome', 'admin', 'membros']
+        fields = [
+            'id', 'nome', 'admin', 'membros', 'endereco', 'telefone', 
+            'cidade', 'estado', 'cep', 'nome_responsavel'
+        ]
 
 class GrupoCreateSerializer(serializers.ModelSerializer):
     senha = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = Grupo
-        fields = ['nome', 'senha']
+        fields = [
+            'nome', 'senha', 'endereco', 'telefone', 
+            'cidade', 'estado', 'cep', 'nome_responsavel'
+        ]
+
 
     def create(self, validated_data):
-        senha_crua = validated_data.pop('senha')
-        validated_data['senha_hash'] = make_password(senha_crua)
-        grupo = Grupo.objects.create(**validated_data)
-        return grupo
+            senha_crua = validated_data.pop('senha')
+            validated_data['senha_hash'] = make_password(senha_crua)
+            grupo = Grupo.objects.create(**validated_data)
+            return grupo

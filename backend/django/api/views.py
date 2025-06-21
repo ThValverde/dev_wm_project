@@ -92,7 +92,7 @@ class GrupoViewSet(viewsets.ModelViewSet):
         perfil_usuario = request.user.perfil
         grupos = perfil_usuario.grupos.all()
         if not grupos.exists():
-            return Response({'detail': 'Você não pertence a nenhum grupo.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response([], status=status.HTTP_200_OK)
         serializer = self.get_serializer(grupos, many=True)
         return Response(serializer.data)
 

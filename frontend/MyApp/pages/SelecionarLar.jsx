@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -6,81 +6,82 @@ import {
   ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
-  Alert 
+  Alert, 
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import SearchBar from '../components/SearchBar';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
 export default function SelecionarLar({ navigation }) {
   const [lares, setLares] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
-  // Dados mockados dos lares (substitua pela sua API futuramente)
-  const laresMock = [
-    {
-      id: 1,
-      nome: 'Lar São Francisco',
-      endereco: 'Rua das Flores, 123',
-      numeroResidentes: 15,
-      capacidade: 20,
-      cor: '#3498db'
-    },
-    {
-      id: 2,
-      nome: 'Casa da Esperança',
-      endereco: 'Av. Principal, 456',
-      numeroResidentes: 8,
-      capacidade: 12,
-      cor: '#2ecc71'
-    },
-    {
-      id: 3,
-      nome: 'Residencial Vida Nova',
-      endereco: 'Rua do Carmo, 789',
-      numeroResidentes: 22,
-      capacidade: 25,
-      cor: '#e74c3c'
-    },
-  ];
+  const carregarLares = async () => {
+    try {
+      setCarregando(true);
+      setErro(null);
 
-  useEffect(() => {
-    const carregarLares = async () => {
-      try {
-        setCarregando(true);
-        // Simular carregamento da API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setLares(laresMock);
-      } catch (err) {
-        setErro('Erro ao carregar lares');
-      } finally {
-        setCarregando(false);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert("Erro", "Você não está autenticado. Faça o login novamente.");
+        navigation.navigate('Login');
+        return;
       }
-    };
+      
+      const response = await axios.get(`${baseURL}/api/grupos/meus-grupos/`, {
+        headers: {
+          'Authorization': `Token ${token}`
+        }
+      });
+      
+      setLares(response.data);
 
-    carregarLares();
-  }, []);
+    } catch (err) {
+      console.error("Erro ao carregar lares:", err.response ? err.response.data : err.message);
+      setErro('Erro ao carregar seus lares. Verifique sua conexão.');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-  const handleCriarLar = () => {
+  useFocusEffect(
+    useCallback(() => {
+      carregarLares();
+    }, [])
+  );
+
+  const handleAction = () => {
     navigation.navigate('CriarLar');
   };
 
-  const handleSelecionarLar = (lar) => {
-    Alert.alert(
-      'Lar Selecionado',
-      `Você selecionou: ${lar.nome}`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Entrar', 
-          onPress: () => navigation.navigate('Inicio')
-        }
-      ]
-    );
+  const handleSelecionarLar = async (lar) => {
+    try {
+      await AsyncStorage.setItem('selectedGroupId', lar.id.toString());
+      navigation.navigate('Main');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível selecionar o lar. Tente novamente.');
+    }
+  };
+const handleLogout = async () => {
+  const logout = async () => {
+    await AsyncStorage.multiRemove(['authToken', 'selectedGroupId']);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }]
+    });
   };
 
-  const handleLogout = () => {
+  if (Platform.OS === 'web') {
+    if (window.confirm('Tem certeza que deseja sair do aplicativo?')) {
+      await logout();
+    }
+  } else {
     Alert.alert(
       'Sair',
       'Tem certeza que deseja sair do aplicativo?',
@@ -89,79 +90,72 @@ export default function SelecionarLar({ navigation }) {
         { 
           text: 'Sair', 
           style: 'destructive',
-          onPress: () => navigation.navigate('Login')
+          onPress: logout
         }
       ]
     );
+  }
+};
+  
+  const getRandomColor = () => {
+    const colors = ['#3498db', '#2ecc71', '#e74c3c', '#9b59b6', '#f1c40f', '#1abc9c'];
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
-  const renderContent = () => {
+  const renderContentList = () => {
     if (carregando) {
       return (
-        <View style={styles.loadingContainer}>
+        <View style={styles.feedbackContainer}>
           <ActivityIndicator size="large" color="#2c3e50" />
-          <Text style={styles.loadingText}>Carregando lares...</Text>
+          <Text style={styles.feedbackText}>Carregando lares...</Text>
         </View>
       );
     }
 
     if (erro) {
       return (
-        <View style={styles.errorContainer}>
+        <View style={styles.feedbackContainer}>
           <Ionicons name="alert-circle-outline" size={48} color="#e74c3c" />
           <Text style={styles.errorText}>{erro}</Text>
+          <TouchableOpacity onPress={carregarLares} style={styles.retryButton}>
+            <Text style={styles.retryButtonText}>Tentar Novamente</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (lares.length === 0) {
+      return (
+        <View style={styles.feedbackContainer}>
+          <Ionicons name="home-outline" size={48} color="#ccc" />
+          <Text style={styles.emptyText}>Você ainda não faz parte de nenhum lar.</Text>
+          <Text style={styles.emptySubText}>Crie um novo lar ou use um código de acesso para entrar em um existente.</Text>
         </View>
       );
     }
 
     return (
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Botão Criar Lar */}
-        <TouchableOpacity 
-          style={styles.criarLarCard}
-          onPress={handleCriarLar}
-        >
-          <View style={styles.criarLarIcon}>
-            <Ionicons name="add" size={32} color="#fff" />
-          </View>
-          <Text style={styles.criarLarText}>Criar Lar</Text>
-          <Text style={styles.criarLarSubtext}>Adicionar novo lar de idosos</Text>
-        </TouchableOpacity>
-
-        {/* Lista de Lares */}
-        <View style={styles.laresGrid}>
-          {lares.map((lar) => (
-            <TouchableOpacity
-              key={lar.id}
-              style={[styles.larCard, { borderLeftColor: lar.cor }]}
-              onPress={() => handleSelecionarLar(lar)}
-            >
-              <View style={styles.larHeader}>
-                <Text style={styles.larNome}>{lar.nome}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#7f8c8d" />
+        {lares.map((lar) => (
+          <TouchableOpacity
+            key={lar.id}
+            style={[styles.larCard, { borderLeftColor: getRandomColor() }]}
+            onPress={() => handleSelecionarLar(lar)}
+          >
+            <View style={styles.larHeader}>
+              <Text style={styles.larNome}>{lar.nome}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#7f8c8d" />
+            </View>
+            <View style={styles.larStats}>
+              <View style={styles.statItem}>
+                <Ionicons name="people-outline" size={16} color="#7f8c8d" />
+                <Text style={styles.statText}>
+                  {lar.membros.length} Membro(s)
+                </Text>
               </View>
-              
-              <Text style={styles.larEndereco}>{lar.endereco}</Text>
-              
-              <View style={styles.larStats}>
-                <View style={styles.statItem}>
-                  <Ionicons name="people-outline" size={16} color="#7f8c8d" />
-                  <Text style={styles.statText}>
-                    {lar.numeroResidentes}/{lar.capacidade}
-                  </Text>
-                </View>
-                
-                <View style={[styles.statusIndicator, { 
-                  backgroundColor: lar.numeroResidentes < lar.capacidade ? '#2ecc71' : '#f39c12' 
-                }]}>
-                  <Text style={styles.statusText}>
-                    {lar.numeroResidentes < lar.capacidade ? 'Disponível' : 'Lotado'}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+            </View>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     );
   };
@@ -171,172 +165,102 @@ export default function SelecionarLar({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerTexts}>
-            <Text style={styles.title}>Selecionar Lar</Text>
+            <Text style={styles.title}>Meus Lares</Text>
             <Text style={styles.subtitle}>Escolha um lar para gerenciar</Text>
           </View>
-          
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
-
-      <SearchBar />
       
-      {renderContent()}
+      <SearchBar />
+
+      {/* Card de Ação Fixo */}
+      <View style={styles.actionCardContainer}>
+        <TouchableOpacity style={styles.actionCard} onPress={handleAction}>
+          <View style={styles.actionCardIcon}>
+            <Ionicons name="add" size={32} color="#fff" />
+          </View>
+          <View>
+            <Text style={styles.actionCardText}>Criar ou Entrar em um Lar</Text>
+            <Text style={styles.actionCardSubtext}>Adicionar novo lar ou usar código</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* A lista agora é renderizada em um container separado e com flex: 1 */}
+      <View style={styles.listContainer}>
+        {renderContentList()}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, backgroundColor: '#2c3e50' },
+  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerTexts: { flex: 1 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  subtitle: { fontSize: 16, color: '#ecf0f1', textAlign: 'center', marginTop: 8 },
+  logoutButton: { padding: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.2)', marginLeft: 16 },
+  
+  actionCardContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
     backgroundColor: 'white',
   },
-  header: {
-    padding: 20,
-    backgroundColor: '#2c3e50',
-  },
-  headerContent: {
+  actionCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTexts: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#ecf0f1',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  logoutButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginLeft: 16,
-  },
-  scrollContainer: {
-    padding: 16,
-  },
-  criarLarCard: {
     backgroundColor: '#3498db',
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
-  criarLarIcon: {
+  actionCardIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginRight: 16,
   },
-  criarLarText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
+  actionCardText: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 4 },
+  actionCardSubtext: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
+  
+  listContainer: {
+    flex: 1,
+    backgroundColor: 'white',
   },
-  criarLarSubtext: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  laresGrid: {
-    gap: 12,
-  },
-  larCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
+  scrollContainer: {
     padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    flexGrow: 1,
   },
-  larHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  larNome: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    flex: 1,
-  },
-  larEndereco: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginBottom: 12,
-  },
-  larStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  statusIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
+  larCard: { backgroundColor: '#f8f9fa', borderRadius: 12, padding: 16, marginBottom: 12, borderLeftWidth: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2, elevation: 2 },
+  larHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  larNome: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', flex: 1 },
+  larStats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statItem: { flexDirection: 'row', alignItems: 'center' },
+  statText: { marginLeft: 4, fontSize: 14, color: '#7f8c8d' },
+
+  // CORREÇÃO: Removido 'flex: 1' para que não ocupe a tela toda
+  feedbackContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    paddingVertical: 50,
+    paddingHorizontal: 20,
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#7f8c8d',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#e74c3c',
-    textAlign: 'center',
-  },
+  feedbackText: { marginTop: 16, fontSize: 16, color: '#7f8c8d' },
+  errorText: { marginTop: 16, fontSize: 16, color: '#e74c3c', textAlign: 'center' },
+  retryButton: { marginTop: 20, backgroundColor: '#2c3e50', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
+  retryButtonText: { color: '#fff', fontSize: 16 },
+  emptyText: { marginTop: 16, fontSize: 18, fontWeight: 'bold', color: '#7f8c8d', textAlign: 'center' },
+  emptySubText: { marginTop: 8, fontSize: 14, color: '#95a5a6', textAlign: 'center' },
 });

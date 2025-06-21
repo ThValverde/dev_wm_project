@@ -8,11 +8,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import NavBar from '../components/NavBar';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
@@ -23,137 +23,124 @@ function Login({ navigation }) {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
 
+  const handleLogin = async () => {
+    if (!email.trim() || !senha.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      return;
+    }
+    setCarregando(true);
+    try {
+      const loginResponse = await axios.post(`${baseURL}/api/auth/login/`, {
+        email: email,
+        password: senha,
+      });
 
-    const validarEmail = (email) => {
-      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return regex.test(email);
-    };
+      const token = loginResponse.data.key;
+      if (!token) throw new Error("Token não recebido do servidor.");
 
-    const handleLogin = async () => {
-      // Validações
-      if (!email.trim() || !senha.trim()) {
-        Alert.alert('Erro', 'Por favor, preencha todos os campos.');
-        return;
-      }
-      if (senha.length < 6) {
-        Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
-        return;
-      }
+      await AsyncStorage.setItem('authToken', token);
+      
+      // NOVO: Após salvar o token, buscar e salvar os dados do perfil do usuário
+      const profileResponse = await axios.get(`${baseURL}/api/auth/profile/`, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
 
-      setCarregando(true);
+      // Salvamos o perfil do usuário como uma string JSON no AsyncStorage
+      await AsyncStorage.setItem('userData', JSON.stringify(profileResponse.data));
 
-      try {
-        const response = await axios.post(`${baseURL}/api/auth/login/`, {
-          email: email,
-          password: senha,
-        });
+      navigation.navigate('SelecionarLar');
 
-        // Pega o token da resposta usando o nome 'key'
-        const token = response.data.key;
-
-        if (!token) {
-          throw new Error("Token não recebido do servidor.");
-        }
-
-        await AsyncStorage.setItem('authToken', token);
-        
-        // navigation.navigate('Inicio');
-        navigation.navigate('SelecionarLar');
-
-      } catch (error) {
-        console.error("Erro no login:", error.response ? error.response.data : error.message);
-        Alert.alert('Erro', 'E-mail ou senha incorretos, ou falha na conexão.');
-      } finally {
-        setCarregando(false);
-      }
-    };
-
+    } catch (error) {
+      console.error("Erro no login:", error.response ? error.response.data : error.message);
+      Alert.alert('Erro', 'E-mail ou senha incorretos, ou falha na conexão.');
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   return (
-      <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>E-doso</Text>
-            <Text style={styles.subtitleText}>Abrigo de Idosos</Text>
+    <SafeAreaView style={styles.container}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardView}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>E-doso</Text>
+          <Text style={styles.subtitleText}>Abrigo de Idosos</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.titleText}>Entrar</Text>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="E-mail"
+              placeholderTextColor="#bdc3c7"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </View>
 
-          <View style={styles.formContainer}>
-            <Text style={styles.titleText}>Entrar</Text>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="E-mail"
-                placeholderTextColor="#bdc3c7"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Senha"
-                placeholderTextColor="#bdc3c7"
-                value={senha}
-                onChangeText={setSenha}
-                secureTextEntry={!mostrarSenha}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setMostrarSenha(!mostrarSenha)}
-              >
-                <Ionicons 
-                  name={mostrarSenha ? "eye-outline" : "eye-off-outline"} 
-                  size={20} 
-                  color="#7f8c8d" 
-                />
-              </TouchableOpacity>
-            </View>
-
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Senha"
+              placeholderTextColor="#bdc3c7"
+              value={senha}
+              onChangeText={setSenha}
+              secureTextEntry={!mostrarSenha}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
             <TouchableOpacity
-              style={[styles.loginButton, carregando && styles.loginButtonDisabled]}
-              onPress={handleLogin}
-              disabled={carregando}
+              style={styles.eyeIcon}
+              onPress={() => setMostrarSenha(!mostrarSenha)}
             >
-              <Text style={styles.loginButtonText}>
-                {carregando ? 'Entrando...' : 'Entrar'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.forgotPasswordButton}>
-              <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
-            </TouchableOpacity>
-
-             <TouchableOpacity 
-              style={styles.signupButton}
-              onPress={() => navigation.navigate('Cadastro')}
-            >
-              <Text style={styles.signupText}>
-                Não tem uma conta? <Text style={{fontWeight: 'bold'}}>Cadastre-se</Text>
-              </Text>
+              <Ionicons 
+                name={mostrarSenha ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color="#7f8c8d" 
+              />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Sistema de Gerenciamento para Abrigo de Idosos
+          <TouchableOpacity
+            style={[styles.loginButton, carregando && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={carregando}
+          >
+             {carregando ? <ActivityIndicator color="#fff" /> : <Text style={styles.loginButtonText}>Entrar</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.forgotPasswordButton}>
+            <Text style={styles.forgotPasswordText}>Esqueceu sua senha?</Text>
+          </TouchableOpacity>
+
+           <TouchableOpacity 
+            style={styles.signupButton}
+            onPress={() => navigation.navigate('Cadastro')}
+          >
+            <Text style={styles.signupText}>
+              Não tem uma conta? <Text style={{fontWeight: 'bold'}}>Cadastre-se</Text>
             </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Sistema de Gerenciamento para Abrigo de Idosos
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </SafeAreaView>
   );
 }
 
