@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from dj_rest_auth.serializers import LoginSerializer
+
 
 from .models import (
     Grupo,
@@ -104,6 +106,30 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = ['email', 'nome_completo', 'password']
+        
+    def validate(self, attrs):
+        password = attrs.get('password')
+        user = Usuario(**{k: v for k, v in attrs.items() if k != 'password'})
+        
+        try:
+            # Tenta validar a senha com as regras do Django
+            validate_password(password, user)
+        except ValidationError as e:
+            # Se a validação falhar, interceptamos os erros e os traduzimos
+            erros_traduzidos = []
+            for erro in e.messages:
+                if 'too short' in erro:
+                    erros_traduzidos.append('Esta senha é muito curta. Ela deve conter pelo menos 8 caracteres.')
+                elif 'too common' in erro:
+                    erros_traduzidos.append('Esta senha é muito comum e fácil de adivinhar.')
+                elif 'not similar' in erro:
+                    erros_traduzidos.append('A senha não pode ser muito parecida com seu e-mail ou nome.')
+                else:
+                    erros_traduzidos.append('A senha não é forte o suficiente.')
+            
+            raise serializers.ValidationError({'password': erros_traduzidos})
+        
+        return attrs
 
     def create(self, validated_data):
         user = Usuario.objects.create_user(
@@ -164,3 +190,20 @@ class GrupoCreateSerializer(serializers.ModelSerializer):
             validated_data['senha_hash'] = make_password(senha_crua)
             grupo = Grupo.objects.create(**validated_data)
             return grupo
+        
+        
+class CustomLoginSerializer(LoginSerializer):
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        # Procura pelo usuário ANTES de tentar autenticar
+        try:
+            user_obj = Usuario.objects.get(email=email)
+        except Usuario.DoesNotExist:
+            raise serializers.ValidationError('Não existe uma conta cadastrada com este e-mail.')
+
+        # Se o usuário existe, mas a senha está errada, o validate original vai tratar
+        # e retornar o erro genérico, que agora podemos interpretar como "senha incorreta".
+        attrs = super().validate(attrs)
+        return attrs
