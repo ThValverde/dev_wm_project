@@ -23,6 +23,8 @@ import Horario from '../pages/Horario';
 import Dados from '../pages/Dados';
 import SelecionarLar from '../pages/SelecionarLar';
 import CriarLar from '../pages/CriarLar';
+import CadastroIdoso from '../pages/CadastroIdoso';
+import EditarIdoso from '../pages/EditarIdoso';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -209,6 +211,16 @@ function App() {
           name="Dados" 
           component={Dados}
           options={{ headerShown: true, title: 'Detalhes do Idoso', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
+        />
+        <Stack.Screen
+          name="CadastroIdoso"
+          component={CadastroIdoso}
+          options={{ headerShown: false }} // A página tem seu próprio cabeçalho
+        />
+        <Stack.Screen 
+          name="EditarIdoso" 
+          component={EditarIdoso} 
+          options={{ title: 'Editar Informações' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
