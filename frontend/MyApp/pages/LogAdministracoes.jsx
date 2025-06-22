@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SectionList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SectionList, ActivityIndicator, Alert, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,7 @@ import baseURL from '../config/api';
 const groupLogsByDate = (logs) => {
   return logs.reduce((acc, log) => {
     const date = new Date(log.data_hora_administracao).toLocaleDateString('pt-BR', {
-      year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+      year: 'numeric', month: 'long', day: 'numeric'
     });
     if (!acc[date]) {
       acc[date] = [];
@@ -45,7 +45,8 @@ export default function LogAdministracoes() {
     try {
       setCarregando(true);
       const token = await AsyncStorage.getItem('authToken');
-      if (!token) throw new Error("Sessão inválida");
+      const groupId = await AsyncStorage.getItem('selectedGroupId');
+      if (!token || !groupId) throw new Error("Sessão inválida");
 
       const response = await axios.get(url, {
         headers: { 'Authorization': `Token ${token}` }
@@ -91,19 +92,63 @@ export default function LogAdministracoes() {
         default: return { text: 'Desconhecido', color: '#7f8c8d', icon: 'help-circle' };
     }
   };
+
+  const handleDeleteLog = (logIdToDelete) => {
+    const deleteAction = async () => {
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        const groupId = await AsyncStorage.getItem('selectedGroupId');
+        await axios.delete(`${baseURL}/api/grupos/${groupId}/logs/${logIdToDelete}/`, {
+          headers: { 'Authorization': `Token ${token}` }
+        });
+        
+        setLogsAgrupados(currentSections => {
+            return currentSections.map(section => ({
+                ...section,
+                data: section.data.filter(log => log.id !== logIdToDelete)
+            })).filter(section => section.data.length > 0);
+        });
+
+        // CORREÇÃO: Mensagem de sucesso para web e mobile
+        if (Platform.OS === 'web') {
+            window.alert("Registro de log excluído com sucesso.");
+        } else {
+            Alert.alert("Sucesso", "Registro de log excluído.");
+        }
+
+      } catch (error) {
+        const errorMessage = error.response?.data?.detail || "Não foi possível excluir o registro. Tente novamente.";
+        
+        // CORREÇÃO: Mensagem de erro para web e mobile
+        if (Platform.OS === 'web') {
+            window.alert(`Erro: ${errorMessage}`);
+        } else {
+            Alert.alert("Acesso Negado", errorMessage);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+        if(window.confirm("Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.")) {
+            deleteAction();
+        }
+    } else {
+        Alert.alert("Excluir Registro", "Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.", [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Excluir", style: "destructive", onPress: deleteAction }
+        ]);
+    }
+  };
   
   const renderItem = ({ item }) => {
     const statusInfo = getStatusInfo(item.status);
-
-    // CORREÇÃO: Adicionado optional chaining (?.) para evitar quebrar a aplicação
-    // se o backend não enviar os dados aninhados da prescrição.
     const nomeMedicamento = item.prescricao?.medicamento?.nome_marca || 'Medicamento não encontrado';
     const nomeIdoso = item.prescricao?.idoso || 'Paciente não encontrado';
 
     return (
         <View style={styles.logCard}>
             <View style={styles.logHeader}>
-                <Text style={styles.logTime}>{new Date(item.data_hora_administracao).toLocaleTimeString('pt-BR', {timeZone: 'UTC'}).substring(0, 5)}</Text>
+                <Text style={styles.logTime}>{new Date(item.data_hora_administracao).toLocaleTimeString('pt-BR').substring(0, 5)}</Text>
                 <View style={[styles.statusBadge, { backgroundColor: statusInfo.color }]}>
                     <Ionicons name={statusInfo.icon} size={14} color="#fff" />
                     <Text style={styles.statusText}>{statusInfo.text}</Text>
@@ -112,7 +157,11 @@ export default function LogAdministracoes() {
             <Text style={styles.logDetail}><Text style={styles.bold}>Medicamento:</Text> {nomeMedicamento}</Text>
             <Text style={styles.logDetail}><Text style={styles.bold}>Paciente:</Text> {nomeIdoso}</Text>
             <Text style={styles.logDetail}><Text style={styles.bold}>Responsável:</Text> {item.usuario_responsavel || 'N/A'}</Text>
-            {item.observacoes && <Text style={styles.logDetail}><Text style={styles.bold}>Obs:</Text> {item.observacoes}</Text>}
+            {item.observacoes ? <Text style={styles.logDetail}><Text style={styles.bold}>Obs:</Text> {item.observacoes}</Text> : null}
+            
+            <TouchableOpacity onPress={() => handleDeleteLog(item.id)} style={styles.deleteButton}>
+                <Ionicons name="trash-outline" size={20} color="#e74c3c" />
+            </TouchableOpacity>
         </View>
     );
   };
@@ -123,6 +172,9 @@ export default function LogAdministracoes() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+        <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Log de Administrações</Text>
+        </View>
         {carregando ? (
             <ActivityIndicator size="large" color="#2c3e50" style={{flex: 1}}/>
         ) : (
@@ -159,14 +211,24 @@ export default function LogAdministracoes() {
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f8f9fa' },
+    headerTitleContainer: {
+        padding: 16,
+        backgroundColor: '#2c3e50'
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#fff',
+        textAlign: 'center'
+    },
     listContainer: { paddingHorizontal: 16, paddingBottom: 20 },
     sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', backgroundColor: '#e9ecef', padding: 10, borderRadius: 8, marginTop: 16, marginBottom: 8 },
-    logCard: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
+    logCard: { backgroundColor: '#fff', borderRadius: 8, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#eee', elevation: 1 },
     logHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     logTime: { fontSize: 16, fontWeight: 'bold', color: '#34495e' },
     statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
     statusText: { color: '#fff', fontSize: 12, fontWeight: 'bold', marginLeft: 4 },
-    logDetail: { fontSize: 14, color: '#333', marginTop: 2 },
+    logDetail: { fontSize: 14, color: '#333', marginTop: 4 },
     bold: { fontWeight: '600' },
     emptyText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#7f8c8d' },
     paginationContainer: {
@@ -176,7 +238,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
-        borderTopWidth: 1,
         borderColor: '#eee',
     },
     paginationButton: {
@@ -195,5 +256,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
         marginHorizontal: 8,
-    }
+    },
+    deleteButton: {
+        position: 'absolute',
+        bottom: 5,
+        right: 5,
+        padding: 5,
+    },
 });

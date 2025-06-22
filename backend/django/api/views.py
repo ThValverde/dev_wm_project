@@ -2,6 +2,7 @@
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework import mixins
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
@@ -368,24 +369,52 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
         perfil_usuario_alvo.responsaveis.remove(idoso)
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
-    
 
-class LogAdministracaoViewSet(viewsets.ReadOnlyModelViewSet):
+class LogAdministracaoViewSet(mixins.RetrieveModelMixin,
+                              mixins.ListModelMixin,
+                              mixins.DestroyModelMixin,
+                              viewsets.GenericViewSet):
     """
-    ViewSet somente leitura para listar todos os logs de administração
-    de um grupo específico, ordenados do mais recente para o mais antigo.
+    ViewSet para listar e excluir logs de administração de um grupo.
+    A criação é feita pela ação 'administrar' na PrescricaoViewSet.
     """
     serializer_class = LogAdministracaoSerializer
+    # A permissão base para ver a lista continua sendo IsGroupMember
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
 
     def get_queryset(self):
-        """
-        Filtra os logs para retornar apenas aqueles de prescrições
-        cujos idosos pertencem ao grupo especificado na URL.
-        """
+        # ... (sem alterações aqui) ...
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             return LogAdministracao.objects.filter(
                 prescricao__idoso__grupo_id=grupo_pk
-            ).order_by('-data_hora_administracao') # Ordena do mais novo para o mais antigo
+            ).order_by('-data_hora_administracao')
         return LogAdministracao.objects.none()
+
+    # NOVO: Método para definir permissões por ação
+    def get_permissions(self):
+        """
+        Sobrescreve as permissões padrão para exigir que apenas um admin
+        possa deletar um log.
+        """
+        if self.action == 'destroy':
+            # Para a ação de deletar, exige que o usuário seja admin do grupo
+            return [permissions.IsAuthenticated(), IsGroupAdmin()]
+        # Para todas as outras ações (list, retrieve), mantém a permissão padrão
+        return super().get_permissions()
+
+    # NOVO: Sobrescreve o método de exclusão para adicionar a lógica de estoque
+    @transaction.atomic # Garante que ou tudo funciona, ou nada é alterado.
+    def destroy(self, request, *args, **kwargs):
+        """
+        Ao deletar um log, adiciona a quantidade do medicamento de volta ao estoque.
+        """
+        log = self.get_object()
+        medicamento = log.prescricao.medicamento
+
+        # Adiciona 1 de volta ao estoque do medicamento
+        medicamento.quantidade_estoque += 1
+        medicamento.save()
+        
+        # Chama o método de exclusão original para deletar o log
+        return super().destroy(request, *args, **kwargs)
