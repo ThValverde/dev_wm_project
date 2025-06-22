@@ -71,7 +71,7 @@ export default function EditarIdoso({ route, navigation }) {
       Alert.alert('Sucesso', 'Dados do idoso atualizados!');
 
       // 3. Navegamos para a tela 'Dados', substituindo a antiga e passando os novos dados
-      navigation.navigate('Dados', { idoso: idosoAtualizado });
+      navigation.goBack();
 
     } catch (error) {
       console.error("Erro ao atualizar idoso:", error.response?.data || error.message);
@@ -85,7 +85,7 @@ export default function EditarIdoso({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.navigate('Dados', { idoso: idosoAtualizado })} style={styles.backButton}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}><Ionicons name="arrow-back" size={24} color="#fff" /></TouchableOpacity>
           <Text style={styles.headerTitle}>Editar Dados do Idoso</Text>
           <View style={{ width: 40 }} />
         </View>

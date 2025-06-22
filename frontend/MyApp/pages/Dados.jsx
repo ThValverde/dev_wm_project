@@ -1,12 +1,13 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import EditarIdoso from '../pages/EditarIdoso';
+import { useFocusEffect } from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import baseURL from '../config/api';
 
-
-
-// Funções auxiliares para formatação de dados (sem alterações)
+// Funções auxiliares...
 function calcularIdade(dataNasc) {
   if (!dataNasc) return 'Não informada';
   const hoje = new Date();
@@ -18,59 +19,78 @@ function calcularIdade(dataNasc) {
   }
   return idade;
 }
-
 function getGeneroDisplay(genero) {
-    if (genero === 'M') return 'Masculino';
-    if (genero === 'F') return 'Feminino';
-    if (genero === 'O') return 'Outro / Não informar';
-    return 'Não informado';
+  if (genero === 'M') return 'Masculino';
+  if (genero === 'F') return 'Feminino';
+  if (genero === 'O') return 'Outro / Não informar';
+  return 'Não informado';
 }
-
 function getPlanoSaudeDisplay(idoso) {
-    if (idoso.plano_saude === 'OUT') {
-        return idoso.plano_saude_outro || 'Outro (não especificado)';
-    }
-    const planos = {
-        'BRA': 'Bradesco Saúde',
-        'UNI': 'Unimed',
-    };
-    return planos[idoso.plano_saude] || 'Não informado';
+  if (!idoso || !idoso.plano_saude) return 'Não informado';
+  if (idoso.plano_saude === 'OUT') return idoso.plano_saude_outro || 'Outro';
+  const planos = { 'BRA': 'Bradesco Saúde', 'UNI': 'Unimed' };
+  return planos[idoso.plano_saude];
 }
-
 
 function Dados({ route, navigation }) {
-  const { idoso } = route.params;
+  const { idosoId } = route.params;
 
+  const [idoso, setIdoso] = useState(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const buscarDadosIdoso = async () => {
+        if (!idosoId) {
+          setErro("ID do idoso não fornecido.");
+          setCarregando(false);
+          return;
+        }
+        try {
+          setCarregando(true);
+          const token = await AsyncStorage.getItem('authToken');
+          const groupId = await AsyncStorage.getItem('selectedGroupId');
+          if (!token || !groupId) throw new Error("Sessão inválida.");
+
+          const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
+            headers: { 'Authorization': `Token ${token}` }
+          });
+          setIdoso(response.data);
+          setErro(null);
+        } catch (err) {
+          setErro("Não foi possível carregar os dados do idoso.");
+        } finally {
+          setCarregando(false);
+        }
+      };
+      buscarDadosIdoso();
+    }, [idosoId])
+  );
+
+  if (carregando) {
+    return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color="#fff" /></SafeAreaView>;
+  }
+  if (erro) {
+    return <SafeAreaView style={styles.safeArea}><Text style={styles.noDataText}>{erro}</Text></SafeAreaView>;
+  }
   if (!idoso) {
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <Text style={styles.noDataText}>Erro ao carregar dados do idoso.</Text>
-        </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.safeArea}><Text style={styles.noDataText}>Dados não encontrados.</Text></SafeAreaView>;
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.profileHeader}>
-          <Image 
-            source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${idoso.nome_completo}` }} 
-            style={styles.profileImage} 
-          />
+          <Image source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${idoso.nome_completo}`}} style={styles.profileImage} />
           <View style={styles.profileNameContainer}>
             <Text style={styles.profileName}>{idoso.nome_completo}</Text>
-            
-            {/* ### BOTÃO DE EDIÇÃO AQUI ### */}
-            <TouchableOpacity 
-              style={styles.editButton}
-              onPress={() => navigation.navigate('EditarIdoso', { idoso: idoso })}
-            >
+            <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditarIdoso', { idoso: idoso })}>
               <Ionicons name="pencil" size={20} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* O restante do arquivo para exibir os dados continua o mesmo */}
+        
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Informações Pessoais</Text>
           <View style={styles.infoRow}><Text style={styles.infoLabel}>Idade:</Text><Text style={styles.infoValue}>{calcularIdade(idoso.data_nascimento)} anos</Text></View>
@@ -78,6 +98,8 @@ function Dados({ route, navigation }) {
           <View style={styles.infoRow}><Text style={styles.infoLabel}>Gênero:</Text><Text style={styles.infoValue}>{getGeneroDisplay(idoso.genero)}</Text></View>
         </View>
 
+        {/* ### CÓDIGO RESTAURADO ABAIXO ### */}
+        
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Documentos</Text>
           <View style={styles.infoRow}><Text style={styles.infoLabel}>CPF:</Text><Text style={styles.infoValue}>{idoso.cpf || "Não informado"}</Text></View>
@@ -101,25 +123,26 @@ function Dados({ route, navigation }) {
           <View><Text style={styles.infoLabel}>Doenças:</Text><Text style={styles.infoValue}>{idoso.doencas || "Nenhuma informada"}</Text></View>
           <View style={{marginTop: 10}}><Text style={styles.infoLabel}>Alergias:</Text><Text style={styles.infoValue}>{idoso.condicoes || "Nenhuma conhecida"}</Text></View>
         </View>
+        
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#2c3e50' },
-    container: { flex: 1, padding: 16 },
-    profileHeader: { alignItems: 'center', marginBottom: 24 },
-    profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: '#e0e0e0' },
-    profileNameContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    profileName: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-    editButton: { marginLeft: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
-    infoCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#ecf0f1', paddingBottom: 8 },
-    infoRow: { flexDirection: 'row', marginBottom: 8, alignItems: 'flex-start' },
-    infoLabel: { fontSize: 16, fontWeight: '600', color: '#34495e', width: '40%' },
-    infoValue: { fontSize: 16, color: '#2c3e50', flex: 1 },
-    noDataText: { fontSize: 16, color: '#7f8c8d', fontStyle: 'italic', textAlign: 'center' },
+  safeArea: { flex: 1, backgroundColor: '#2c3e50' },
+  container: { flex: 1, padding: 16 },
+  profileHeader: { alignItems: 'center', marginBottom: 24 },
+  profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: '#e0e0e0' },
+  profileNameContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  profileName: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  editButton: { marginLeft: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
+  infoCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#ecf0f1', paddingBottom: 8 },
+  infoRow: { flexDirection: 'row', marginBottom: 8, alignItems: 'flex-start' },
+  infoLabel: { fontSize: 16, fontWeight: '600', color: '#34495e', width: '40%' },
+  infoValue: { fontSize: 16, color: '#2c3e50', flex: 1 },
+  noDataText: { fontSize: 18, color: '#fff', textAlign: 'center', marginTop: 50, paddingHorizontal: 20 },
 });
 
 export default Dados;
