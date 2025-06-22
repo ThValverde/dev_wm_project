@@ -25,6 +25,10 @@ import SelecionarLar from '../pages/SelecionarLar';
 import CriarLar from '../pages/CriarLar';
 import CadastroIdoso from '../pages/CadastroIdoso';
 import EditarIdoso from '../pages/EditarIdoso';
+import DadosMedicamento from '../pages/DadosMedicamento';
+import CadastroMedicamento from '../pages/CadastroMedicamento';
+import EditarMedicamento from '../pages/EditarMedicamento';
+
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -198,29 +202,32 @@ function MainDrawerNavigator() {
 function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Login"
-        screenOptions={{ headerShown: false }} 
-      >
+      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        {/* ... Telas de Login, Cadastro, SelecionarLar, CriarLar, Main, Dados, CadastroIdoso, EditarIdoso ... */}
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Cadastro" component={Cadastro} />
         <Stack.Screen name="SelecionarLar" component={SelecionarLar} />
         <Stack.Screen name="CriarLar" component={CriarLar} />
         <Stack.Screen name="Main" component={MainDrawerNavigator} />
-        <Stack.Screen 
-          name="Dados" 
-          component={Dados}
-          options={{ headerShown: true, title: 'Detalhes do Idoso', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
+        <Stack.Screen name="Dados" component={Dados} options={{ headerShown: true, title: 'Perfil do Idoso' }}/>
+        <Stack.Screen name="CadastroIdoso" component={CadastroIdoso} options={{ headerShown: false }} />
+        <Stack.Screen name="EditarIdoso" component={EditarIdoso} options={{ headerShown: false }} />
+
+        {/* Adicionando as novas telas de medicamento à pilha de navegação */}
+        <Stack.Screen
+          name="DadosMedicamento"
+          component={DadosMedicamento}
+          options={{ headerShown: true, title: 'Detalhes do Medicamento', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
         />
         <Stack.Screen
-          name="CadastroIdoso"
-          component={CadastroIdoso}
-          options={{ headerShown: false }} // A página tem seu próprio cabeçalho
+          name="CadastroMedicamento"
+          component={CadastroMedicamento}
+          options={{ headerShown: true, title: 'Adicionar Medicamento', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
         />
-        <Stack.Screen 
-          name="EditarIdoso" 
-          component={EditarIdoso} 
-          options={{ title: 'Editar Informações' }}
+        <Stack.Screen
+          name="EditarMedicamento"
+          component={EditarMedicamento}
+          options={{ headerShown: true, title: 'Editar Medicamento', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
