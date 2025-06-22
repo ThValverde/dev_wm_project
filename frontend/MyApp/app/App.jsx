@@ -30,7 +30,7 @@ import CadastroMedicamento from '../pages/CadastroMedicamento';
 import EditarMedicamento from '../pages/EditarMedicamento';
 import CadastroPrescricao from '../pages/CadastroPrescricao';
 import EditarPrescricao from '../pages/EditarPrescricao';
-
+import Administracao from '../pages/Administracao';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -240,6 +240,16 @@ function App() {
           name="EditarPrescricao"
           component={EditarPrescricao}
           options={{ headerShown: true, title: 'Editar Prescrição' }}
+        />
+        <Stack.Screen
+          name="Administracao"
+          component={Administracao}
+          options={{
+            headerShown: true,
+            title: 'Registrar Administração',
+            headerStyle: { backgroundColor: '#2c3e50' },
+            headerTintColor: '#fff'
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

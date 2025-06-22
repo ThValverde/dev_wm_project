@@ -304,13 +304,13 @@ class Prescricao(models.Model):
         verbose_name="Frequência da Dose"
     )
     # Campos booleanos para especificar os dias da semana para administração (se aplicável)
-    dia_domingo = models.BooleanField(default=False, verbose_name="Domingo")
-    dia_segunda = models.BooleanField(default=False, verbose_name="Segunda-feira")
-    dia_terca = models.BooleanField(default=False, verbose_name="Terça-feira")
-    dia_quarta = models.BooleanField(default=False, verbose_name="Quarta-feira")
-    dia_quinta = models.BooleanField(default=False, verbose_name="Quinta-feira")
-    dia_sexta = models.BooleanField(default=False, verbose_name="Sexta-feira")
-    dia_sabado = models.BooleanField(default=False, verbose_name="Sábado")
+    dia_domingo = models.BooleanField(default=True, verbose_name="Domingo")
+    dia_segunda = models.BooleanField(default=True, verbose_name="Segunda-feira")
+    dia_terca = models.BooleanField(default=True, verbose_name="Terça-feira")
+    dia_quarta = models.BooleanField(default=True, verbose_name="Quarta-feira")
+    dia_quinta = models.BooleanField(default=True, verbose_name="Quinta-feira")
+    dia_sexta = models.BooleanField(default=True, verbose_name="Sexta-feira")
+    dia_sabado = models.BooleanField(default=True, verbose_name="Sábado")
     # Chave estrangeira para o Idoso a quem a prescrição se destina
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
     # Chave estrangeira para o Medicamento prescrito. PROTECT evita que um medicamento seja deletado se houver prescrições ativas para ele

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
-
+// --- Funções Auxiliares para Formatação ---
 function calcularIdade(dataNasc) {
   if (!dataNasc) return 'Não informada';
   const hoje = new Date();
@@ -19,54 +19,57 @@ function calcularIdade(dataNasc) {
   }
   return idade;
 }
+
 function getGeneroDisplay(genero) {
   if (genero === 'M') return 'Masculino';
   if (genero === 'F') return 'Feminino';
   if (genero === 'O') return 'Outro / Não informar';
   return 'Não informado';
 }
+
 function getPlanoSaudeDisplay(idoso) {
-  if (!idoso || !idoso.plano_saude) return 'Não informado';
-  if (idoso.plano_saude === 'OUT') return idoso.plano_saude_outro || 'Outro';
-  const planos = { 'BRA': 'Bradesco Saúde', 'UNI': 'Unimed' };
-  return planos[idoso.plano_saude];
+    if (!idoso || !idoso.plano_saude) return 'Não informado';
+    if (idoso.plano_saude === 'OUT') return idoso.plano_saude_outro || 'Outro';
+    const planos = { 'BRA': 'Bradesco Saúde', 'UNI': 'Unimed' };
+    return planos[idoso.plano_saude];
 }
 
+// --- Componente Principal ---
 function Dados({ route, navigation }) {
   const { idosoId } = route.params;
-  const [idoso, setIdoso] = useState(null);
 
+  const [idoso, setIdoso] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      const buscarDadosIdoso = async () => {
-        if (!idosoId) {
-          setErro("ID do idoso não fornecido.");
-          setCarregando(false);
-          return;
-        }
-        try {
-          setCarregando(true);
-          const token = await AsyncStorage.getItem('authToken');
-          const groupId = await AsyncStorage.getItem('selectedGroupId');
-          if (!token || !groupId) throw new Error("Sessão inválida.");
+  // Função para buscar os dados do idoso na API
+  const fetchIdosoData = useCallback(async () => {
+    if (!idosoId) {
+      setErro("ID do idoso não fornecido.");
+      setCarregando(false);
+      return;
+    }
+    try {
+      setCarregando(true);
+      const token = await AsyncStorage.getItem('authToken');
+      const groupId = await AsyncStorage.getItem('selectedGroupId');
+      if (!token || !groupId) throw new Error("Sessão inválida.");
 
-          const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
-            headers: { 'Authorization': `Token ${token}` }
-          });
-          setIdoso(response.data);
-          setErro(null);
-        } catch (err) {
-          setErro("Não foi possível carregar os dados do idoso.");
-        } finally {
-          setCarregando(false);
-        }
-      };
-      buscarDadosIdoso();
-    }, [idosoId])
-  );
+      const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
+
+      setIdoso(response.data);
+      setErro(null);
+    } catch (err) {
+      setErro("Não foi possível carregar os dados do idoso.");
+    } finally {
+      setCarregando(false);
+    }
+  }, [idosoId]);
+
+  // Hook que executa a busca de dados toda vez que a tela entra em foco
+  useFocusEffect(fetchIdosoData);
 
   const handleDeletePrescricao = (prescricaoId) => {
     const deleteAction = async () => {
@@ -77,18 +80,25 @@ function Dados({ route, navigation }) {
                 headers: { 'Authorization': `Token ${token}` }
             });
             Alert.alert("Sucesso", "Prescrição removida.");
-            // Atualiza a lista removendo o item deletado
-            fetchIdosoData();
+            fetchIdosoData(); // Força a re-busca dos dados para atualizar a lista
         } catch (error) {
             Alert.alert("Erro", "Não foi possível remover a prescrição.");
         }
     };
-    Alert.alert("Remover Prescrição", "Tem certeza que deseja remover esta prescrição?", [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Remover", style: "destructive", onPress: deleteAction }
-    ]);
+    // Lógica de Alerta compatível com Web e Mobile
+    if (Platform.OS === 'web') {
+        if(window.confirm("Tem certeza que deseja remover esta prescrição?")) {
+            deleteAction();
+        }
+    } else {
+        Alert.alert("Remover Prescrição", "Tem certeza que deseja remover esta prescrição?", [
+            { text: "Cancelar", style: "cancel" },
+            { text: "Remover", style: "destructive", onPress: deleteAction }
+        ]);
+    }
   };
 
+  // Renderização de estados de carregamento e erro
   if (carregando) {
     return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color="#fff" /></SafeAreaView>;
   }
@@ -99,6 +109,7 @@ function Dados({ route, navigation }) {
     return <SafeAreaView style={styles.safeArea}><Text style={styles.noDataText}>Dados não encontrados.</Text></SafeAreaView>;
   }
 
+  // Renderização principal do perfil
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
@@ -118,8 +129,6 @@ function Dados({ route, navigation }) {
           <View style={styles.infoRow}><Text style={styles.infoLabel}>Nascimento:</Text><Text style={styles.infoValue}>{idoso.data_nascimento ? new Date(idoso.data_nascimento).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : "Não informada"}</Text></View>
           <View style={styles.infoRow}><Text style={styles.infoLabel}>Gênero:</Text><Text style={styles.infoValue}>{getGeneroDisplay(idoso.genero)}</Text></View>
         </View>
-
-        {/* ### CÓDIGO RESTAURADO ABAIXO ### */}
         
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Documentos</Text>
@@ -144,7 +153,8 @@ function Dados({ route, navigation }) {
           <View><Text style={styles.infoLabel}>Doenças:</Text><Text style={styles.infoValue}>{idoso.doencas || "Nenhuma informada"}</Text></View>
           <View style={{marginTop: 10}}><Text style={styles.infoLabel}>Alergias:</Text><Text style={styles.infoValue}>{idoso.condicoes || "Nenhuma conhecida"}</Text></View>
         </View>
-    <View style={styles.infoCard}>
+
+        <View style={styles.infoCard}>
             <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Prescrições</Text>
                 <TouchableOpacity 
@@ -154,13 +164,21 @@ function Dados({ route, navigation }) {
                     <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
             </View>
-            {/* CORREÇÃO: Mapeia as prescrições do objeto 'idoso' */}
             {idoso.prescricoes && idoso.prescricoes.length > 0 ? idoso.prescricoes.map(p => (
                 <View key={p.id} style={styles.prescricaoCard}>
-                    {/* ... JSX para exibir a prescrição ... */}
+                    <View style={{flex: 1}}>
+                        <Text style={styles.prescricaoMedicamento}>{p.medicamento.nome_marca}</Text>
+                        <Text style={styles.prescricaoDetalhe}>{p.dosagem} - às {p.horario_previsto.substring(0, 5)}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => navigation.navigate('EditarPrescricao', { prescricao: p, idosoId: idoso.id })} style={styles.actionIcon}>
+                        <Ionicons name="pencil-outline" size={22} color="#3498db" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDeletePrescricao(p.id)} style={styles.actionIcon}>
+                        <Ionicons name="trash-outline" size={22} color="#e74c3c" />
+                    </TouchableOpacity>
                 </View>
             )) : (
-                <Text>Nenhuma prescrição cadastrada.</Text>
+                <Text style={styles.noDataTextSmall}>Nenhuma prescrição cadastrada.</Text>
             )}
         </View>
       </ScrollView>
@@ -169,19 +187,26 @@ function Dados({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#2c3e50' },
-  container: { flex: 1, padding: 16 },
-  profileHeader: { alignItems: 'center', marginBottom: 24 },
-  profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: '#e0e0e0' },
-  profileNameContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  profileName: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  editButton: { marginLeft: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
-  infoCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#ecf0f1', paddingBottom: 8 },
-  infoRow: { flexDirection: 'row', marginBottom: 8, alignItems: 'flex-start' },
-  infoLabel: { fontSize: 16, fontWeight: '600', color: '#34495e', width: '40%' },
-  infoValue: { fontSize: 16, color: '#2c3e50', flex: 1 },
-  noDataText: { fontSize: 18, color: '#fff', textAlign: 'center', marginTop: 50, paddingHorizontal: 20 },
+    safeArea: { flex: 1, backgroundColor: '#f8f9fa' },
+    container: { flex: 1 },
+    profileHeader: { alignItems: 'center', padding: 20, backgroundColor: '#2c3e50'},
+    profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: '#e0e0e0' },
+    profileNameContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    profileName: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+    editButton: { marginLeft: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
+    infoCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginHorizontal: 16, marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 1, }, shadowOpacity: 0.22, shadowRadius: 2.22, elevation: 3, },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#ecf0f1', paddingBottom: 8, marginBottom: 8 },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50' },
+    infoRow: { flexDirection: 'row', marginBottom: 8, alignItems: 'flex-start' },
+    infoLabel: { fontSize: 16, fontWeight: '600', color: '#34495e', width: '40%' },
+    infoValue: { fontSize: 16, color: '#2c3e50', flex: 1 },
+    addButton: { backgroundColor: '#27ae60', padding: 6, borderRadius: 20 },
+    prescricaoCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f9fa', padding: 12, borderRadius: 8, marginTop: 10 },
+    prescricaoMedicamento: { fontSize: 16, fontWeight: 'bold', color: '#2c3e50' },
+    prescricaoDetalhe: { fontSize: 14, color: '#7f8c8d' },
+    actionIcon: { padding: 8, marginLeft: 8 },
+    noDataText: { fontSize: 18, color: '#2c3e50', textAlign: 'center', marginTop: 50, paddingHorizontal: 20 },
+    noDataTextSmall: { fontSize: 14, color: '#7f8c8d', fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
 });
 
 export default Dados;
