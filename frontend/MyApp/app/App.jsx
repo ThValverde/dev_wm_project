@@ -31,6 +31,7 @@ import EditarMedicamento from '../pages/EditarMedicamento';
 import CadastroPrescricao from '../pages/CadastroPrescricao';
 import EditarPrescricao from '../pages/EditarPrescricao';
 import Administracao from '../pages/Administracao';
+import LogAdministracoes from '../pages/LogAdministracoes';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -197,6 +198,7 @@ function MainDrawerNavigator() {
       <Drawer.Screen name="Início" component={Inicio} />
       <Drawer.Screen name="Estoque" component={Estoque} />
       <Drawer.Screen name="Horários" component={Horario} />
+       <Drawer.Screen name="Log de Administrações" component={LogAdministracoes} />
     </Drawer.Navigator>
   );
 }

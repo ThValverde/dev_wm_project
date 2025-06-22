@@ -5,8 +5,21 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
+// Mapeia os dias da semana para renderização e para as chaves da API
+const DIAS_MAP = [
+    { label: 'D', key: 'dia_domingo' },
+    { label: 'S', key: 'dia_segunda' },
+    { label: 'T', key: 'dia_terca' },
+    { label: 'Q', key: 'dia_quarta' },
+    { label: 'Q', key: 'dia_quinta' },
+    { label: 'S', key: 'dia_sexta' },
+    { label: 'S', key: 'dia_sabado' }
+];
+
 export default function CadastroPrescricao({ route, navigation }) {
     const { idosoId } = route.params;
+
+    // Estados do formulário
     const [medicamentos, setMedicamentos] = useState([]);
     const [medicamentoId, setMedicamentoId] = useState(null);
     const [horario, setHorario] = useState('08:00');
@@ -14,8 +27,14 @@ export default function CadastroPrescricao({ route, navigation }) {
     const [instrucoes, setInstrucoes] = useState('');
     const [carregando, setCarregando] = useState(true);
 
+    // Estado para os dias da semana, com 'true' como padrão para todos
+    const [diasSemana, setDiasSemana] = useState({
+        dia_domingo: true, dia_segunda: true, dia_terca: true,
+        dia_quarta: true, dia_quinta: true, dia_sexta: true, dia_sabado: true,
+    });
+
+    // Busca os medicamentos disponíveis no estoque para preencher o seletor
     useEffect(() => {
-        // Busca os medicamentos disponíveis no estoque para preencher o Picker
         const fetchMedicamentos = async () => {
             try {
                 const token = await AsyncStorage.getItem('authToken');
@@ -36,6 +55,20 @@ export default function CadastroPrescricao({ route, navigation }) {
         fetchMedicamentos();
     }, []);
 
+    // Função para alternar um dia específico
+    const handleToggleDia = (diaKey) => {
+        setDiasSemana(prev => ({ ...prev, [diaKey]: !prev[diaKey] }));
+    };
+    
+    // Função para marcar ou desmarcar todos os dias de uma vez
+    const handleToggleTodosDias = (value) => {
+        setDiasSemana({
+            dia_domingo: value, dia_segunda: value, dia_terca: value,
+            dia_quarta: value, dia_quinta: value, dia_sexta: value, dia_sabado: value,
+        });
+    };
+    
+    // Função para salvar a nova prescrição
     const handleSave = async () => {
         if (!medicamentoId || !dosagem.trim()) {
             Alert.alert("Erro", "Selecione um medicamento e informe a dosagem.");
@@ -43,30 +76,37 @@ export default function CadastroPrescricao({ route, navigation }) {
         }
         setCarregando(true);
         try {
-                    const token = await AsyncStorage.getItem('authToken');
-                    const groupId = await AsyncStorage.getItem('selectedGroupId');
-                    const payload = {
-                        // CORREÇÃO: O idoso_id é enviado no corpo da requisição
-                        idoso_id: idosoId,
-                        medicamento_id: medicamentoId,
-                        horario_previsto: horario,
-                        dosagem: dosagem,
-                        instrucoes: instrucoes,
-                    };
-                    // CORREÇÃO: A URL aponta para o endpoint de prescrições do grupo
-                    await axios.post(`${baseURL}/api/grupos/${groupId}/prescricoes/`, payload, {
-                        headers: { 'Authorization': `Token ${token}` }
-                    });
-                    Alert.alert("Sucesso", "Prescrição adicionada.");
-                    navigation.goBack();
-                } catch (error) {
+            const token = await AsyncStorage.getItem('authToken');
+            const groupId = await AsyncStorage.getItem('selectedGroupId');
+            const payload = {
+                idoso_id: idosoId,
+                medicamento_id: medicamentoId,
+                horario_previsto: horario,
+                dosagem: dosagem,
+                instrucoes: instrucoes,
+                ativo: true, // Prescrição começa ativa por padrão
+                frequencia: 'DI', // Frequência diária como padrão, pode ser alterado se necessário
+                ...diasSemana, // Adiciona os valores booleanos de cada dia
+            };
+            await axios.post(`${baseURL}/api/grupos/${groupId}/prescricoes/`, payload, {
+                headers: { 'Authorization': `Token ${token}` }
+            });
+            Alert.alert("Sucesso", "Prescrição adicionada.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Erro ao salvar prescrição:", error.response?.data || error.message);
             Alert.alert("Erro", "Não foi possível salvar a prescrição.");
         } finally {
             setCarregando(false);
         }
     };
+    
+    if (carregando && medicamentos.length === 0) {
+        return <ActivityIndicator size="large" style={{flex: 1, justifyContent: 'center'}} />;
+    }
 
-    if (carregando) return <ActivityIndicator size="large" />;
+    // Variável para controlar o estado do interruptor "Todos os dias"
+    const todosSelecionados = Object.values(diasSemana).every(Boolean);
 
     return (
         <ScrollView style={styles.container}>
@@ -80,13 +120,32 @@ export default function CadastroPrescricao({ route, navigation }) {
             </View>
 
             <Text style={styles.label}>Horário da Dose (HH:MM)*</Text>
-            <TextInput style={styles.input} value={horario} onChangeText={setHorario} />
+            <TextInput style={styles.input} value={horario} onChangeText={setHorario} maxLength={5} keyboardType="numeric" />
             
             <Text style={styles.label}>Dosagem*</Text>
             <TextInput style={styles.input} placeholder="Ex: 1 comprimido, 10ml" value={dosagem} onChangeText={setDosagem} />
 
             <Text style={styles.label}>Instruções Adicionais</Text>
-            <TextInput style={[styles.input, {height: 100}]} multiline value={instrucoes} onChangeText={setInstrucoes} />
+            <TextInput style={[styles.input, {height: 100, textAlignVertical: 'top'}]} multiline value={instrucoes} onChangeText={setInstrucoes} />
+
+            <Text style={styles.label}>Dias da Semana</Text>
+            <View style={styles.switchContainer}>
+                <Text style={{fontSize: 16}}>Todos os dias</Text>
+                <Switch value={todosSelecionados} onValueChange={handleToggleTodosDias} />
+            </View>
+            <View style={styles.diasContainer}>
+                {DIAS_MAP.map(dia => (
+                    <TouchableOpacity
+                        key={dia.key}
+                        style={[styles.diaButton, diasSemana[dia.key] && styles.diaButtonActive]}
+                        onPress={() => handleToggleDia(dia.key)}
+                    >
+                        <Text style={[styles.diaText, diasSemana[dia.key] && styles.diaTextActive]}>
+                            {dia.label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
 
             <TouchableOpacity onPress={handleSave} style={styles.button} disabled={carregando}>
                 {carregando ? <ActivityIndicator color="#fff"/> : <Text style={styles.buttonText}>Salvar Prescrição</Text>}
@@ -120,7 +179,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ddd',
         borderRadius: 8,
-        padding: 10,
+        padding: 12,
         fontSize: 16,
         color: '#333',
         marginBottom: 12,
@@ -131,11 +190,46 @@ const styles = StyleSheet.create({
         padding: 15,
         alignItems: 'center',
         marginTop: 20,
-        marginBottom: 30,
+        marginBottom: 40,
     },
     buttonText: {
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    switchContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        marginBottom: 12,
+    },
+    diasContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+    },
+    diaButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#e0e0e0',
+    },
+    diaButtonActive: {
+        backgroundColor: '#007bff',
+    },
+    diaText: {
+        color: '#000',
+        fontWeight: 'bold',
+    },
+    diaTextActive: {
+        color: '#fff',
     },
 });

@@ -13,6 +13,7 @@ from .views import (
     MedicamentoViewSet,
     PrescricaoViewSet,
     UsuarioViewSet,
+    LogAdministracaoViewSet,
 )
 
 # 1. Criação do roteador principal (pai) para a entidade 'Grupo'.
@@ -38,6 +39,7 @@ grupos_router.register(r'prescricoes', PrescricaoViewSet, basename='grupo-prescr
 # Registra a ViewSet de Usuários para listar membros de um grupo. URL gerada: /grupos/{grupo_pk}/usuarios/
 grupos_router.register(r'usuarios', UsuarioViewSet, basename='grupo-usuarios')
 
+grupos_router.register(r'logs', LogAdministracaoViewSet, basename='grupo-logs')
 
 # Lista principal de padrões de URL da API.
 urlpatterns = [

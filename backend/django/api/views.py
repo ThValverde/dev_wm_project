@@ -366,3 +366,24 @@ class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
         idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
         perfil_usuario_alvo.responsaveis.remove(idoso)
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
+    
+
+class LogAdministracaoViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet somente leitura para listar todos os logs de administração
+    de um grupo específico, ordenados do mais recente para o mais antigo.
+    """
+    serializer_class = LogAdministracaoSerializer
+    permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+
+    def get_queryset(self):
+        """
+        Filtra os logs para retornar apenas aqueles de prescrições
+        cujos idosos pertencem ao grupo especificado na URL.
+        """
+        grupo_pk = self.kwargs.get('grupo_pk')
+        if grupo_pk:
+            return LogAdministracao.objects.filter(
+                prescricao__idoso__grupo_id=grupo_pk
+            ).order_by('-data_hora_administracao') # Ordena do mais novo para o mais antigo
+        return LogAdministracao.objects.none()

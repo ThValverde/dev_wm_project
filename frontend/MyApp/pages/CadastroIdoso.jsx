@@ -6,14 +6,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MaskedTextInput } from "react-native-mask-text";
-// NOVO: Importar o componente de seletor de data
-import DateTimePicker from '@react-native-community/datetimepicker';
+// O DateTimePicker não é mais necessário aqui
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
 export default function CadastroIdoso({ navigation }) {
-  // ... outros estados
+  // Estados do formulário
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [peso, setPeso] = useState('');
   const [genero, setGenero] = useState('M');
@@ -27,32 +26,31 @@ export default function CadastroIdoso({ navigation }) {
   const [condicoes, setCondicoes] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // NOVO: Estados para controlar o seletor de data
-  const [dataNascimento, setDataNascimento] = useState(new Date(1950, 0, 1)); // Começa com uma data padrão
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // NOVO: Função para lidar com a mudança de data do seletor
-  const onDateChange = (event, selectedDate) => {
-    // Esconde o seletor (no Android é necessário)
-    setShowDatePicker(Platform.OS === 'ios'); // No iOS, pode permanecer aberto
-    if (selectedDate) {
-      setDataNascimento(selectedDate);
-    }
-  };
+  // MUDANÇA: Estados separados para dia, mês e ano
+  const [diaNascimento, setDiaNascimento] = useState('');
+  const [mesNascimento, setMesNascimento] = useState('');
+  const [anoNascimento, setAnoNascimento] = useState('');
 
   const handleCadastro = async () => {
+    // MUDANÇA: Lógica de validação e formatação da data
+    const dataFormatada = `${anoNascimento}-${mesNascimento}-${diaNascimento}`;
+    const dataObj = new Date(dataFormatada + 'T12:00:00'); // Adiciona hora para evitar problemas de fuso horário
+
+    if (isNaN(dataObj.getTime()) || dataObj.getFullYear() != anoNascimento || (dataObj.getMonth() + 1) != mesNascimento || dataObj.getDate() != diaNascimento) {
+        Alert.alert('Erro', 'A data de nascimento inserida é inválida. Verifique os campos.');
+        return;
+    }
+
     if (!nomeCompleto.trim() || !cpf.trim() || !cartaoSus.trim()) {
       Alert.alert('Erro', 'Nome, CPF e Cartão SUS são obrigatórios.');
       return;
     }
+
     setCarregando(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
       const groupId = await AsyncStorage.getItem('selectedGroupId');
       if (!token || !groupId) throw new Error("Sessão inválida. Faça o login novamente.");
-      
-      // NOVO: Formatar a data para o formato YYYY-MM-DD antes de enviar
-      const dataFormatada = dataNascimento.toISOString().split('T')[0];
 
       const payload = {
         nome_completo: nomeCompleto,
@@ -99,21 +97,34 @@ export default function CadastroIdoso({ navigation }) {
           <Text style={styles.sectionTitle}>Informações Pessoais</Text>
           <TextInput style={styles.input} placeholder="Nome Completo*" value={nomeCompleto} onChangeText={setNomeCompleto} />
           
-          {/* ATUALIZAÇÃO: Campo de Data de Nascimento agora usa o seletor */}
+          {/* MUDANÇA: Inputs separados para Dia, Mês e Ano */}
           <Text style={styles.label}>Data de Nascimento*</Text>
-          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInputButton}>
-            <Text style={styles.dateInputText}>{dataNascimento.toLocaleDateString('pt-BR')}</Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              testID="dateTimePicker"
-              value={dataNascimento}
-              mode={'date'}
-              display="default"
-              onChange={onDateChange}
-              maximumDate={new Date()} // Não permite selecionar datas futuras
+          <View style={styles.dateContainer}>
+            <TextInput
+              style={[styles.input, styles.dateInput]}
+              placeholder="DD"
+              keyboardType="numeric"
+              maxLength={2}
+              value={diaNascimento}
+              onChangeText={setDiaNascimento}
             />
-          )}
+            <TextInput
+              style={[styles.input, styles.dateInput]}
+              placeholder="MM"
+              keyboardType="numeric"
+              maxLength={2}
+              value={mesNascimento}
+              onChangeText={setMesNascimento}
+            />
+            <TextInput
+              style={[styles.input, styles.dateInput, { flex: 2 }]}
+              placeholder="AAAA"
+              keyboardType="numeric"
+              maxLength={4}
+              value={anoNascimento}
+              onChangeText={setAnoNascimento}
+            />
+          </View>
 
           <TextInput style={styles.input} placeholder="Peso (kg)" value={peso} onChangeText={setPeso} keyboardType="numeric" />
           
@@ -156,18 +167,24 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   scrollContainer: { padding: 20 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginTop: 20, marginBottom: 15 },
-  label: { fontSize: 16, color: '#34495e', marginBottom: 8 },
+  label: { fontSize: 16, color: '#34495e', marginBottom: 8, fontWeight: '600' },
   input: { backgroundColor: '#fff', borderRadius: 10, padding: 15, fontSize: 16, marginBottom: 12, borderWidth: 1, borderColor: '#e1e5e8' },
-  // NOVO: Estilo para o botão de data
-  dateInputButton: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#e1e5e8', justifyContent: 'center' },
-  dateInputText: { fontSize: 16 },
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  dateInput: {
+    flex: 1,
+    textAlign: 'center',
+  },
   inputMulti: { minHeight: 80, textAlignVertical: 'top', paddingVertical: 15 },
   genderContainer: { flexDirection: 'row', marginBottom: 12, gap: 8 },
   genderButton: { flex: 1, padding: 15, borderRadius: 10, alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e1e5e8' },
   genderActive: { backgroundColor: '#3498db', borderColor: '#3498db' },
   genderText: { fontSize: 16, color: '#34495e' },
   genderTextActive: { color: '#fff' },
-  switchContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  switchContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, backgroundColor: '#fff', borderRadius: 10, padding: 15, borderWidth: 1, borderColor: '#e1e5e8'},
   button: { backgroundColor: '#27ae60', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 },
   buttonDisabled: { backgroundColor: '#bdc3c7' },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
