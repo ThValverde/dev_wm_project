@@ -211,7 +211,8 @@ class MedicamentoViewSet(viewsets.ModelViewSet):
     """
     serializer_class = MedicamentoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-    
+    pagination_class = None
+
     def get_queryset(self):
         """Filtra os medicamentos para retornar apenas aqueles do grupo especificado na URL."""
         grupo_pk = self.kwargs.get('grupo_pk')
@@ -233,6 +234,7 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
     """
     serializer_class = PrescricaoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
+    pagination_class = None
 
     def get_queryset(self):
         """Filtra as prescrições para retornar apenas aquelas de idosos do grupo especificado."""

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import SearchBar from '../components/SearchBar';
@@ -12,6 +12,7 @@ export default function Estoque({ navigation }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
+  // useFocusEffect garante que a lista seja recarregada ao entrar na tela
   useFocusEffect(
     useCallback(() => {
       const fetchMedicamentos = async () => {
@@ -24,8 +25,11 @@ export default function Estoque({ navigation }) {
           const response = await axios.get(`${baseURL}/api/grupos/${groupId}/medicamentos/`, {
             headers: { 'Authorization': `Token ${token}` }
           });
+          
+          // Como este endpoint não é paginado, a resposta já é a lista completa
           setMedicamentos(response.data);
           setErro(null);
+
         } catch (err) {
           setErro("Não foi possível carregar o estoque.");
         } finally {
@@ -36,35 +40,42 @@ export default function Estoque({ navigation }) {
     }, [])
   );
 
-  const renderContent = () => {
-    if (carregando) return <ActivityIndicator size="large" color="#fff" style={{ marginTop: 50 }} />;
-    if (erro) return <Text style={styles.feedbackText}>{erro}</Text>;
-    if (medicamentos.length === 0) {
-      return <Text style={styles.feedbackText}>Nenhum medicamento cadastrado no estoque.</Text>;
-    }
-    return (
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {medicamentos.map((med) => (
-          <TouchableOpacity 
-            key={med.id} 
-            style={styles.card}
-            onPress={() => navigation.navigate('DadosMedicamento', { medicamentoId: med.id })}
-          >
-            <Text style={styles.medName}>{med.nome_marca}</Text>
-            <View style={styles.infoRow}><Text style={styles.label}>Princípio Ativo:</Text><Text style={styles.value}>{med.principio_ativo || 'N/A'}</Text></View>
-            <View style={styles.infoRow}><Text style={styles.label}>Estoque (unidades):</Text><Text style={styles.value}>{med.quantidade_estoque}</Text></View>
-            <View style={styles.infoRow}><Text style={styles.label}>Concentração:</Text><Text style={styles.value}>{med.concentracao_valor ? `${med.concentracao_valor} ${med.concentracao_unidade}` : 'N/A'}</Text></View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    );
-  };
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={() => navigation.navigate('DadosMedicamento', { medicamentoId: item.id })}
+    >
+      <Text style={styles.medName}>{item.nome_marca}</Text>
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Estoque:</Text>
+        <Text style={styles.value}>{item.quantidade_estoque} un.</Text>
+      </View>
+      <View style={styles.infoRow}>
+        <Text style={styles.label}>Forma:</Text>
+        <Text style={styles.value}>{item.forma_farmaceutica || 'N/A'}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
+  if (carregando) {
+    return (
+      <View style={[styles.container, {justifyContent: 'center'}]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Estoque de Medicamentos</Text>
       <SearchBar />
-      {renderContent()}
+      <FlatList
+        data={medicamentos}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={<Text style={styles.feedbackText}>Nenhum medicamento cadastrado.</Text>}
+      />
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('CadastroMedicamento')}
@@ -78,7 +89,7 @@ export default function Estoque({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#2c3e50', padding: 16 },
   title: { color: '#f4f4f4', fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-  scrollContent: { paddingBottom: 80 },
+  listContent: { paddingBottom: 80 },
   card: { backgroundColor: '#fff', borderRadius: 14, padding: 18, marginBottom: 16, elevation: 4 },
   medName: { fontSize: 20, fontWeight: 'bold', color: '#232946', marginBottom: 8 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },

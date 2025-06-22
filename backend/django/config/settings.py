@@ -134,7 +134,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication', 
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,  # Define o número padrão de itens por página
 }
 
 # Necessário para dj-rest-auth
@@ -174,3 +176,5 @@ ALLOWED_HOSTS = [
     '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
     '192.168.0.14', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
 ]
+
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
