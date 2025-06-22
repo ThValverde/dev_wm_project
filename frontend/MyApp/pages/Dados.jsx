@@ -7,7 +7,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
-// Funções auxiliares...
+
 function calcularIdade(dataNasc) {
   if (!dataNasc) return 'Não informada';
   const hoje = new Date();
@@ -34,8 +34,8 @@ function getPlanoSaudeDisplay(idoso) {
 
 function Dados({ route, navigation }) {
   const { idosoId } = route.params;
-
   const [idoso, setIdoso] = useState(null);
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
@@ -67,6 +67,27 @@ function Dados({ route, navigation }) {
       buscarDadosIdoso();
     }, [idosoId])
   );
+
+  const handleDeletePrescricao = (prescricaoId) => {
+    const deleteAction = async () => {
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const groupId = await AsyncStorage.getItem('selectedGroupId');
+            await axios.delete(`${baseURL}/api/grupos/${groupId}/prescricoes/${prescricaoId}/`, {
+                headers: { 'Authorization': `Token ${token}` }
+            });
+            Alert.alert("Sucesso", "Prescrição removida.");
+            // Atualiza a lista removendo o item deletado
+            fetchIdosoData();
+        } catch (error) {
+            Alert.alert("Erro", "Não foi possível remover a prescrição.");
+        }
+    };
+    Alert.alert("Remover Prescrição", "Tem certeza que deseja remover esta prescrição?", [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Remover", style: "destructive", onPress: deleteAction }
+    ]);
+  };
 
   if (carregando) {
     return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color="#fff" /></SafeAreaView>;
@@ -123,7 +144,25 @@ function Dados({ route, navigation }) {
           <View><Text style={styles.infoLabel}>Doenças:</Text><Text style={styles.infoValue}>{idoso.doencas || "Nenhuma informada"}</Text></View>
           <View style={{marginTop: 10}}><Text style={styles.infoLabel}>Alergias:</Text><Text style={styles.infoValue}>{idoso.condicoes || "Nenhuma conhecida"}</Text></View>
         </View>
-        
+    <View style={styles.infoCard}>
+            <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Prescrições</Text>
+                <TouchableOpacity 
+                    style={styles.addButton}
+                    onPress={() => navigation.navigate('CadastroPrescricao', { idosoId: idoso.id })}
+                >
+                    <Ionicons name="add" size={24} color="#fff" />
+                </TouchableOpacity>
+            </View>
+            {/* CORREÇÃO: Mapeia as prescrições do objeto 'idoso' */}
+            {idoso.prescricoes && idoso.prescricoes.length > 0 ? idoso.prescricoes.map(p => (
+                <View key={p.id} style={styles.prescricaoCard}>
+                    {/* ... JSX para exibir a prescrição ... */}
+                </View>
+            )) : (
+                <Text>Nenhuma prescrição cadastrada.</Text>
+            )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

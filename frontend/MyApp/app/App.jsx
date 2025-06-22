@@ -28,6 +28,8 @@ import EditarIdoso from '../pages/EditarIdoso';
 import DadosMedicamento from '../pages/DadosMedicamento';
 import CadastroMedicamento from '../pages/CadastroMedicamento';
 import EditarMedicamento from '../pages/EditarMedicamento';
+import CadastroPrescricao from '../pages/CadastroPrescricao';
+import EditarPrescricao from '../pages/EditarPrescricao';
 
 
 const Stack = createNativeStackNavigator();
@@ -228,6 +230,16 @@ function App() {
           name="EditarMedicamento"
           component={EditarMedicamento}
           options={{ headerShown: true, title: 'Editar Medicamento', headerStyle: { backgroundColor: '#2c3e50' }, headerTintColor: '#fff' }}
+        />
+                <Stack.Screen
+          name="CadastroPrescricao"
+          component={CadastroPrescricao}
+          options={{ headerShown: true, title: 'Adicionar Prescrição' }}
+        />
+        <Stack.Screen
+          name="EditarPrescricao"
+          component={EditarPrescricao}
+          options={{ headerShown: true, title: 'Editar Prescrição' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
