@@ -2,14 +2,39 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Checkbox from 'expo-checkbox';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import baseURL from '../config/api';
 
+const Dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const DiasBoolFalse = [false,false,false,false,false,false,false];
+
+const PrescriptionInitialState = {
+    id: 1,
+    idoso: "Jose Alberto",
+    medicamento: {
+    id: 1,
+    nome_marca: "Paracetamol",
+    principio_ativo: "paracetamol",
+    generico: false,
+    fabricante: "",
+    concentracao_valor: null,
+    concentracao_unidade: null,
+    forma_farmaceutica: "COMP",
+    quantidade_estoque: 30,
+    grupo: 1
+  },
+    horario_previsto: "08:00:00",
+    dosagem: "1 comprimido azul",
+    instrucoes: "",
+    ativo: true
+}
 
 function Prescricoes({route, navigation}){
     const {idoso} = route.params;
     const [prescricoes, setPrescricoes] = useState([]);
+    const [edit,setEdit] = useState(false);
     const [erro,setErro] = useState();
     const [carregando,setCarregando] = useState(true);
 
@@ -29,11 +54,20 @@ function Prescricoes({route, navigation}){
           }
         });
 
-        const newPrescricoes = response.data.filter(P => {
-            P.id===idoso.id
-        })
+         // 3. Salva a lista de idosos recebida no estado do componente
 
-        // 3. Salva a lista de idosos recebida no estado do componente
+        const newPrescricoes1 = response.data.filter(P => 
+            P.id===idoso.id
+        )
+
+        if(newPrescricoes1.length===0) return;
+
+        const newPrescricoes = newPrescricoes1.map(P => ({
+        ...P,
+        dias : [0,1,2,3,4,5,6],
+        diasBool : DiasBoolFalse
+        }))
+
         setPrescricoes(newPrescricoes);
 
       } catch (err) {
@@ -46,6 +80,155 @@ function Prescricoes({route, navigation}){
 
     buscarPrescricoes();
   }, []);
+
+    const daysTitle = () => {
+        return(
+            <View
+            style={styles.prescriptionDaysFlex}
+            >
+                {Dias.map((d,id) => {
+                    return(
+                        <Text
+                    key={id}
+                    style={{...styles.prescriptionCardTitleText,
+                    flex: '1 1 0',
+                    textAlign: 'center',
+                        }}
+                    >
+                        {d}
+                    </Text>
+                )})} 
+            </View>
+        )
+    }
+
+    const daysCheckBox = (prescription, idx) => {
+        return(
+            <View
+            style={styles.prescriptionDaysFlex}
+            >
+        
+                {prescription.diasBool.map( (d, idy) => (
+                    <View
+                    key={idy}
+                    style={{...styles.checkBoxStyle, flex:'1 1 0'}}
+                    >
+                        {edit? <Checkbox
+                    style= {{alignSelf: 'center'}}
+                    color={"#2c3e50"}
+                    value={d}
+                    onChange={() => changeCheckBox(idx,idy)}
+                    /> : <Checkbox
+                    style= {{alignSelf: 'center'}}
+                    color={"#2c3e50"}
+                    disabled
+                    value={d}
+                    onChange={() => changeCheckBox(idx,idy)}
+                    />}
+                    </View>
+                ))}
+            </View>
+        )
+    }
+
+    const changeCheckBox = (idx,idy) => {
+        const prescription = {...prescricoes[idx],
+            diasBool: prescricoes[idx].diasBool.map( (d, j) => (
+                idy===j? !d : d
+            ))
+        }
+
+        const newPrescricoes = [
+            ...prescricoes.slice(0,idx),
+            prescription,
+            ...prescricoes.slice(idx+1)
+        ]
+
+        setPrescricoes(newPrescricoes)
+    }
+
+    const addPrescription = () => {
+        const newPrescription = { 
+            ...PrescriptionInitialState,
+            dias : [],
+            diasBool : DiasBoolFalse
+        }
+
+        const newPrescricoes = [
+            ...prescricoes,
+            newPrescription
+        ]
+
+        setPrescricoes(newPrescricoes);
+    }
+
+    const editButton = () => {
+        if(edit) saveChanges();
+        setEdit(!edit)
+    }
+
+    const saveChanges = () => {
+
+    }
+
+    const renderPrescription = (prescription, idx) => {
+        if(edit) return(
+            <View
+            key={idx}
+            style={styles.prescriptionComponent}
+            >
+                <Text
+                style={{...styles.infoLabel,
+                    flex: '1 1 0'
+                }}
+                >
+                    Remedeo
+                </Text>
+                <Text
+                style={{...styles.infoLabel,
+                    flex: '1 1 0'
+                }}
+                >   
+                    horareo
+                </Text>
+
+                <View
+                style={{flex:'6 1 0'}}
+                >
+                    {daysCheckBox(prescription,idx)}
+                </View>
+
+            </View>
+        )
+        else return(
+            <View
+            key={idx}
+            style={styles.prescriptionComponent}
+            >
+                <Text
+                style={{...styles.infoLabel,
+                    flex: '1 1 0'
+                }}
+                >
+                    Remedeo
+                </Text>
+                <Text
+                style={{...styles.infoLabel,
+                    flex: '1 1 0'
+                }}
+                >   
+                    horareo
+                </Text>
+
+                <View
+                style={{flex:'6 1 0'}}
+                >
+                    {daysCheckBox(prescription,idx)}
+                </View>
+
+            </View>
+        )
+    }
 
     return(
         <SafeAreaView
@@ -95,16 +278,56 @@ function Prescricoes({route, navigation}){
                         </Text>
                     </TouchableOpacity>
                 </View>
-                
-                {prescricoes.length>0?  prescricoes.map( (P,idx) =>{
-                    return (
+
+                <View
+                    style={styles.prescriptionCard}
+                >
+                    <View
+                    style={styles.prescriptionCardLineBox}
+                    >
                         <Text
-                        key={idx}
+                        style={{...styles.prescriptionCardTitleText,
+                            flex: '1 1 0'}}
                         >
-                            {P.id} eba {idoso.id}
+                            Remedios
                         </Text>
-                    )
-                }): <Text>EBass</Text>}
+                        <Text
+                        style={{...styles.prescriptionCardTitleText,
+                            flex: '1 1 0'
+                        }}
+                        >
+                            Horarios
+                        </Text>
+                        <View
+                        style={{flex: '6 1 0'}}
+                        >
+                            {daysTitle()}
+                        </View>
+                    </View>
+
+                    <View
+                    style={styles.prescriptionList}
+                    >
+                        {(prescricoes.map((P,idx) => (
+                            renderPrescription(P,idx)
+                        )))}
+                    </View>
+
+                    <View>
+                    <TouchableOpacity
+                    onPress={() => {addPrescription()}}
+                    >
+                        <Text>Add</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                    onPress={() => {editButton()}}
+                    >
+                        <Text>{edit? "Salvar alterações" : "Editar"}</Text>
+                    </TouchableOpacity>
+                    </View>
+
+                </View>
 
             </ScrollView>
         </SafeAreaView>
@@ -148,7 +371,8 @@ const styles = StyleSheet.create({
       fontWeight: 'bold',
       color: '#fff',
     },
-    infoCard: {
+    prescriptionCard: {
+        flexDirection: 'column',
       backgroundColor: '#fff',
       borderRadius: 12,
       padding: 16,
@@ -158,6 +382,39 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.1,
       shadowRadius: 4,
       elevation: 3,
+    },
+    prescriptionCardLineBox: {
+        flexDirection: 'row',
+        gap: 8,
+        justifyContent: 'flex-start',
+        marginBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ecf0f1',
+        paddingBottom: 8,
+    },
+    prescriptionDaysFlex: {
+        flexDirection: 'row',
+        gap:4,
+        justifyContent: 'flex-start',
+    },
+    prescriptionCardTitleText : {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2c3e50',
+        marginHorizontal: 8,
+        textAlign: 'center'
+    },
+    prescriptionList: {
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        gap: 20
+    },
+    prescriptionComponent: {
+        flexDirection: 'row',
+        gap: 8,
+        justifyContent: 'flex-start',
+        marginBottom: 12,
+        paddingBottom: 8,
     },
     sectionTitle: {
       fontSize: 18,
@@ -177,12 +434,17 @@ const styles = StyleSheet.create({
       fontSize: 16,
       fontWeight: '600',
       color: '#34495e',
-      width: '45%',
+      marginHorizontal: 8,
+      textAlign: 'center'
     },
     infoValue: {
       fontSize: 16,
       color: '#2c3e50',
-      flex: 1,
+      flex: '1 1'
+    },
+    checkBoxStyle: {
+        boxSizing: 'border-box',
+        margin: '20'
     },
     noDataText: {
       fontSize: 16,
