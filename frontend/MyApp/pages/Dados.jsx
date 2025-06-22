@@ -43,33 +43,42 @@ function Dados({ route, navigation }) {
   const [erro, setErro] = useState(null);
 
   // Função para buscar os dados do idoso na API
-  const fetchIdosoData = useCallback(async () => {
-    if (!idosoId) {
-      setErro("ID do idoso não fornecido.");
-      setCarregando(false);
-      return;
-    }
-    try {
-      setCarregando(true);
-      const token = await AsyncStorage.getItem('authToken');
-      const groupId = await AsyncStorage.getItem('selectedGroupId');
-      if (!token || !groupId) throw new Error("Sessão inválida.");
+useFocusEffect(
+  useCallback(() => {
+    // 1. A função que o hook recebe NÃO é async.
+    
+    // 2. Definimos nossa função async AQUI DENTRO.
+    const fetchData = async () => {
+      if (!idosoId) {
+        setErro("ID do idoso não fornecido.");
+        setCarregando(false);
+        return;
+      }
+      try {
+        setCarregando(true);
+        const token = await AsyncStorage.getItem('authToken');
+        const groupId = await AsyncStorage.getItem('selectedGroupId');
+        if (!token || !groupId) throw new Error("Sessão inválida.");
 
-      const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
-        headers: { 'Authorization': `Token ${token}` }
-      });
+        const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
+          headers: { 'Authorization': `Token ${token}` }
+        });
 
-      setIdoso(response.data);
-      setErro(null);
-    } catch (err) {
-      setErro("Não foi possível carregar os dados do idoso.");
-    } finally {
-      setCarregando(false);
-    }
-  }, [idosoId]);
+        setIdoso(response.data);
+        setErro(null);
+      } catch (err) {
+        console.error("Erro ao buscar dados do idoso:", err.response?.data || err.message);
+        setErro("Não foi possível carregar os dados do idoso.");
+      } finally {
+        setCarregando(false);
+      }
+    };
 
-  // Hook que executa a busca de dados toda vez que a tela entra em foco
-  useFocusEffect(fetchIdosoData);
+    // 3. Chamamos a função async que acabamos de criar.
+    fetchData();
+
+  }, [idosoId]) // A dependência do useCallback continua sendo o idosoId
+);
 
   const handleDeletePrescricao = (prescricaoId) => {
     const deleteAction = async () => {
