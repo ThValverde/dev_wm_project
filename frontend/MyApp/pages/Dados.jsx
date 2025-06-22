@@ -114,7 +114,6 @@ function Dados({ route, navigation }) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.profileHeader}>
-          <Image source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${idoso.nome_completo}`}} style={styles.profileImage} />
           <View style={styles.profileNameContainer}>
             <Text style={styles.profileName}>{idoso.nome_completo}</Text>
             <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditarIdoso', { idoso: idoso })}>
@@ -190,7 +189,6 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f8f9fa' },
     container: { flex: 1 },
     profileHeader: { alignItems: 'center', padding: 20, backgroundColor: '#2c3e50'},
-    profileImage: { width: 120, height: 120, borderRadius: 60, marginBottom: 12, borderWidth: 3, borderColor: '#fff', backgroundColor: '#e0e0e0' },
     profileNameContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
     profileName: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
     editButton: { marginLeft: 15, padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },

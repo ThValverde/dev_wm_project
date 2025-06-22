@@ -12,17 +12,16 @@ function Cadastro({ navigation }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  const [erroCadastro, setErroCadastro] = useState('');
 
   const handleCadastro = async () => {
-    // Validações básicas
+    setErroCadastro(''); // Limpa erros antigos ao tentar de novo
+
     if (!nome.trim() || !email.trim() || !senha.trim()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
+      setErroCadastro('Por favor, preencha todos os campos.'); // Define o erro no estado
       return;
-    }
-    if (senha.length < 6) {
-        Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres.');
-        return;
     }
 
     setCarregando(true);
@@ -39,10 +38,25 @@ function Cadastro({ navigation }) {
       navigation.navigate('Login'); // Redireciona para a tela de login
 
     } catch (error) {
-      // Exibe erros específicos do backend, se disponíveis
-      const erroMsg = error.response?.data?.email?.[0] || 'Não foi possível realizar o cadastro. Tente novamente.';
-      console.error("Erro no cadastro:", error.response ? error.response.data : error.message);
-      Alert.alert('Erro no Cadastro', erroMsg);
+        let erroMsg = 'Não foi possível realizar o cadastro. Tente novamente.';
+
+        // Verifica se o erro veio da API e tem dados
+        if (error.response && error.response.data) {
+          const data = error.response.data;
+          console.error("Erro no cadastro:", data); // Log para depuração
+
+          // Tenta pegar o erro de senha primeiro
+          if (data.password && data.password.length > 0) {
+            erroMsg = data.password[0]; // Ex: "Esta senha é muito curta."
+
+          // Depois o erro de email duplicado
+          } else if (data.email && data.email.length > 0) {
+            erroMsg = data.email[0]; // Ex: "usuario com este e-mail já existe."
+          }
+        }
+
+        setErroCadastro(erroMsg);
+
     } finally {
       setCarregando(false);
     }
@@ -90,9 +104,21 @@ function Cadastro({ navigation }) {
                 placeholderTextColor="#bdc3c7"
                 value={senha}
                 onChangeText={setSenha}
-                secureTextEntry
+                secureTextEntry={!mostrarSenha}
               />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setMostrarSenha(!mostrarSenha)}
+              >
+                <Ionicons 
+                  name={mostrarSenha ? "eye-outline" : "eye-off-outline"} 
+                  size={20} 
+                  color="#7f8c8d" 
+                />
+              </TouchableOpacity>
             </View>
+
+            {erroCadastro ? <Text style={styles.errorText}>{erroCadastro}</Text> : null}
 
             <TouchableOpacity
               style={[styles.actionButton, carregando && styles.buttonDisabled]}
@@ -162,6 +188,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#2c3e50',
   },
+  eyeIcon: {
+    padding: 8,
+  },
   actionButton: {
     backgroundColor: '#27ae60', // Cor verde para cadastro
     borderRadius: 12,
@@ -177,6 +206,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  
+  errorText: {
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: '600',
   },
   linkButton: {
     alignItems: 'center',

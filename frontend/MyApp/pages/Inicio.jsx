@@ -63,7 +63,6 @@ function Inicio({ navigation }) {
       style={styles.card}
       onPress={() => navigation.navigate('Dados', { idosoId: item.id })}
     >
-      <Image source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${item.nome_completo}` }} style={styles.image} />
       <Text style={styles.nome}>{item.nome_completo}</Text>
     </TouchableOpacity>
   );
@@ -115,8 +114,6 @@ const styles = StyleSheet.create({
   appContainer: { flex: 1, backgroundColor: '#fff' },
   grid: { padding: 8, alignItems: 'center' },
   card: { backgroundColor: '#f8f9fa', borderRadius: 10, margin: 8, alignItems: 'center', width: 150, padding: 10, elevation: 2, borderWidth: 1, borderColor: '#eee' },
-  image: { width: 100, height: 100, borderRadius: 50, marginBottom: 8, backgroundColor: '#e0e0e0' },
-  nome: { fontWeight: 'bold', fontSize: 16, textAlign: 'center', color: '#333' },
   infoText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#7f8c8d' },
   fab: { position: 'absolute', width: 60, height: 60, alignItems: 'center', justifyContent: 'center', right: 30, bottom: 30, backgroundColor: '#3498db', borderRadius: 30, elevation: 8 },
   loadMoreButton: { padding: 15, backgroundColor: '#3498db', borderRadius: 8, alignItems: 'center', margin: 16 },

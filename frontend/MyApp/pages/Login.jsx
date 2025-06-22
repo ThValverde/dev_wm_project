@@ -22,12 +22,15 @@ function Login({ navigation }) {
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
+  const [erroLogin, setErroLogin] = useState(''); 
 
   const handleLogin = async () => {
     if (!email.trim() || !senha.trim()) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos.');
-      return;
+        setErroLogin('Por favor, preencha todos os campos.'); // Mostra o erro na tela
+        return;
     }
+
+    setErroLogin('');
     setCarregando(true);
     try {
       const loginResponse = await axios.post(`${baseURL}/api/auth/login/`, {
@@ -51,10 +54,18 @@ function Login({ navigation }) {
       navigation.navigate('SelecionarLar');
 
     } catch (error) {
-      console.error("Erro no login:", error.response ? error.response.data : error.message);
-      Alert.alert('Erro', 'E-mail ou senha incorretos, ou falha na conexão.');
+        let errorMessage = 'Falha na conexão. Tente novamente.';
+        if (error.response && error.response.data) {
+            const nonFieldErrors = error.response.data.non_field_errors;
+            if (nonFieldErrors && nonFieldErrors.length > 0) {
+                errorMessage = nonFieldErrors[0];
+            }
+        }
+        // AQUI ESTÁ A MUDANÇA PRINCIPAL:
+        setErroLogin(errorMessage); // Define a mensagem de erro no estado
+        console.error("Erro no login:", errorMessage);
     } finally {
-      setCarregando(false);
+        setCarregando(false);
     }
   };
 
@@ -96,6 +107,7 @@ function Login({ navigation }) {
               value={senha}
               onChangeText={setSenha}
               secureTextEntry={!mostrarSenha}
+              onSubmitEditing={handleLogin}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -110,6 +122,8 @@ function Login({ navigation }) {
               />
             </TouchableOpacity>
           </View>
+
+          {erroLogin ? <Text style={styles.errorText}>{erroLogin}</Text> : null}
 
           <TouchableOpacity
             style={[styles.loginButton, carregando && styles.loginButtonDisabled]}
@@ -232,6 +246,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  errorText: {
+        color: '#e74c3c', // Cor vermelha para erros
+        textAlign: 'center',
+        marginBottom: 10,
+        fontSize: 16,
+        fontWeight: '600',
+    },
   forgotPasswordButton: {
     alignItems: 'center',
     marginTop: 20,
