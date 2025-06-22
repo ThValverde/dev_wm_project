@@ -158,7 +158,6 @@ class Idoso(models.Model):
         # Restrições para garantir que CPF, RG e Cartão SUS sejam únicos dentro de cada grupo
         constraints = [
             models.UniqueConstraint(fields=['grupo', 'cpf'], name='unique_cpf_por_grupo'),
-            models.UniqueConstraint(fields=['grupo', 'rg'], name='unique_rg_por_grupo'),
             models.UniqueConstraint(fields=['grupo', 'cartao_sus'], name='unique_sus_por_grupo'),
         ]
 
