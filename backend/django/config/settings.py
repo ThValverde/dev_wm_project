@@ -169,7 +169,7 @@ CORS_ALLOWED_ORIGINS = [            # DEPLOY
     # Adicione a URL do seu frontend em produção aqui
     # Exemplo: 'https://meu-frontend.onrender.com',
     'https://e-doso-backend.onrender.com',
-    # 'http://localhost:8081',
+    'http://localhost:8081',
 ]
 
 
