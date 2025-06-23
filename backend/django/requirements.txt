@@ -55,12 +55,14 @@ djangorestframework-simplejwt==5.5.0
     # via -r requirements.in
 drf-nested-routers==0.94.2
     # via -r requirements.in
+gunicorn==23.0.0
 kombu==5.5.4
     # via celery
 packaging==25.0
     # via kombu
 prompt-toolkit==3.0.51
     # via click-repl
+psycopg2-binary==2.9.10
 pyjwt==2.9.0
     # via djangorestframework-simplejwt
 python-dateutil==2.9.0.post0

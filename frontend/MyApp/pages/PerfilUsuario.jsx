@@ -66,7 +66,7 @@ export default function PerfilUsuario() {
     );
 
     const handleUpdateProfile = async () => {
-        // ... (lógica existente sem alterações)
+        
         if (!nome.trim() || !email.trim()) {
             Alert.alert("Erro", "Nome e e-mail não podem ficar em branco.");
             return;

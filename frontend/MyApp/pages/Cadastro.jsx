@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   ScrollView,
-  ActivityIndicator // Adicionado para o feedback de carregamento
+  ActivityIndicator 
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,7 +63,7 @@ function Cadastro({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* O KeyboardAvoidingView envolve todo o conteúdo que pode ser afetado pelo teclado */}
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -71,7 +71,7 @@ function Cadastro({ navigation }) {
       >
         <ScrollView 
             contentContainerStyle={styles.scrollContainer}
-            keyboardShouldPersistTaps="handled" // Ajuda a manter o foco e cliques
+            keyboardShouldPersistTaps="handled" 
         >
           <View style={styles.formContainer}>
             <Text style={styles.titleText}>Criar Conta</Text>

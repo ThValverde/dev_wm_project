@@ -48,7 +48,6 @@ class MyProfileView(generics.RetrieveUpdateAPIView):
         """Retorna o objeto do usuário logado."""
         return self.request.user
 
-# --- CORREÇÃO APLICADA AQUI ---
 class ChangePasswordView(generics.GenericAPIView):
     """
     View para que o usuário autenticado possa alterar sua própria senha.

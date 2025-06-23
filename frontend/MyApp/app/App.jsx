@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import baseURL from '../config/api';
 
-// --- Importação das telas (pages) ---
+// --- Importação das pages ---
 import Login from '../pages/Login';
 import Cadastro from '../pages/Cadastro';
 import Inicio from '../pages/Inicio';
@@ -199,7 +199,7 @@ function App() {
         <Stack.Screen name="Dados" component={Dados} options={{ headerShown: true, title: 'Perfil do Idoso' }}/>
         <Stack.Screen name="CadastroIdoso" component={CadastroIdoso} options={{ headerShown: false }} />
         <Stack.Screen name="EditarIdoso" component={EditarIdoso} options={{ headerShown: false }} />
-        {/* --- TELA DE PERFIL ADICIONADA AO STACK PRINCIPAL --- */}
+  
         <Stack.Screen 
           name="PerfilUsuario"
           component={PerfilUsuario}
