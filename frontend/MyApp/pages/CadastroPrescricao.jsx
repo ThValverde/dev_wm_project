@@ -71,7 +71,6 @@ export default function CadastroPrescricao({ route, navigation }) {
     
     // Função para salvar a nova prescrição
     const handleSave = async () => {
-    // Validação CORRIGIDA: usa 'doseValor' em vez de 'dosagem'
     if (!medicamentoId || !doseValor.trim()) {
         Alert.alert("Erro", "Selecione um medicamento e informe o valor da dosagem.");
         return;
