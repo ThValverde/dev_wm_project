@@ -264,7 +264,7 @@ class Medicamento(models.Model):
     quantidade_estoque = models.DecimalField(
         verbose_name="Quantidade em Estoque (Embalagens)", 
         max_digits = 10,
-        decimal_places = 2,
+        decimal_places = 0,
         default = 0.00,
         help_text = "Quantidade de embalagens disponíveis no estoque. Ex: 10 comprimidos, 5 frascos de 100ml, etc."
     )
