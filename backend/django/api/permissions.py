@@ -55,7 +55,6 @@ class IsGroupMember(permissions.BasePermission):
         user_groups = request.user.perfil.grupos.all()
         target_group = None
 
-        # CORREÇÃO: Lógica de verificação reestruturada para tratar cada tipo corretamente
         if isinstance(obj, Grupo):
             target_group = obj
         elif isinstance(obj, PerfilUsuario):
