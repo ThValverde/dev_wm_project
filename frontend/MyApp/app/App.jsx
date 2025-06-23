@@ -1,5 +1,3 @@
-// App.jsx
-
 import 'react-native-gesture-handler';
 // Adicionado useState, useCallback, useFocusEffect
 import React, { useState, useCallback } from 'react';
@@ -7,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator, DrawerItemList } from '@react-navigation/drawer'; 
-import { Alert, TouchableOpacity, View, Text, Platform, Clipboard } from 'react-native';
+import { Alert, TouchableOpacity, View, Text, Platform, Clipboard , SafeAreaView} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Adicionado axios e baseURL para a chamada da API
