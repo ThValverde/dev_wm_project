@@ -13,31 +13,33 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
 export default function PerfilUsuario() {
-    // Estados para o formulário de dados pessoais
+    // Estados para dados pessoais
     const [nome, setNome] = useState('');
     const [email, setEmail] = useState('');
     const [carregandoPerfil, setCarregandoPerfil] = useState(true);
 
-    // Estados para o formulário de alteração de senha
+    // Estados para alteração de senha
     const [senhaAntiga, setSenhaAntiga] = useState('');
     const [novaSenha1, setNovaSenha1] = useState('');
     const [novaSenha2, setNovaSenha2] = useState('');
     const [carregandoSenha, setCarregandoSenha] = useState(false);
     
-    // Estado para controlar a visibilidade da senha
+    // Estado para visibilidade da senha
     const [secureText, setSecureText] = useState({
         antiga: true,
         nova1: true,
         nova2: true,
     });
+    
+    // --- NOVO ESTADO PARA MENSAGENS ---
+    const [passwordMessage, setPasswordMessage] = useState({ text: '', type: '' });
 
-    // Função para alternar a visibilidade da senha
     const toggleSecureText = (field) => {
         setSecureText(prevState => ({ ...prevState, [field]: !prevState[field] }));
     };
@@ -64,6 +66,7 @@ export default function PerfilUsuario() {
     );
 
     const handleUpdateProfile = async () => {
+        // ... (lógica existente sem alterações)
         if (!nome.trim() || !email.trim()) {
             Alert.alert("Erro", "Nome e e-mail não podem ficar em branco.");
             return;
@@ -82,14 +85,18 @@ export default function PerfilUsuario() {
     };
 
     const handleChangePassword = async () => {
+        // Limpa a mensagem anterior ao tentar novamente
+        setPasswordMessage({ text: '', type: '' });
+
         if (!senhaAntiga || !novaSenha1 || !novaSenha2) {
-            Alert.alert("Erro", "Todos os campos de senha são obrigatórios.");
+            setPasswordMessage({ text: "Todos os campos de senha são obrigatórios.", type: 'error' });
             return;
         }
         if (novaSenha1 !== novaSenha2) {
-            Alert.alert("Erro", "As novas senhas não coincidem.");
+            setPasswordMessage({ text: "As novas senhas não coincidem.", type: 'error' });
             return;
         }
+
         setCarregandoSenha(true);
         try {
             const token = await AsyncStorage.getItem('authToken');
@@ -97,13 +104,19 @@ export default function PerfilUsuario() {
                 { old_password: senhaAntiga, new_password1: novaSenha1, new_password2: novaSenha2 },
                 { headers: { 'Authorization': `Token ${token}` } }
             );
-            Alert.alert("Sucesso", "Senha alterada com sucesso!");
+            
+            // --- MENSAGEM DE SUCESSO NO LUGAR DO ALERTA ---
+            setPasswordMessage({ text: "Senha alterada com sucesso!", type: 'success' });
             setSenhaAntiga('');
             setNovaSenha1('');
             setNovaSenha2('');
         } catch (error) {
-            const errorMsg = error.response?.data?.old_password?.[0] || "Não foi possível alterar a senha.";
-            Alert.alert("Erro", errorMsg);
+            const errorMsg = error.response?.data?.old_password?.[0] 
+                           || error.response?.data?.new_password1?.[0] 
+                           || error.response?.data?.new_password2?.[0] 
+                           || "Não foi possível alterar a senha.";
+            // --- MENSAGEM DE ERRO NO LUGAR DO ALERTA ---
+            setPasswordMessage({ text: errorMsg, type: 'error' });
         } finally {
             setCarregandoSenha(false);
         }
@@ -162,6 +175,13 @@ export default function PerfilUsuario() {
                                 <Ionicons name={secureText.nova2 ? "eye-off" : "eye"} size={24} color="grey" />
                             </TouchableOpacity>
                         </View>
+                        
+                        {/* --- COMPONENTE DE MENSAGEM --- */}
+                        {passwordMessage.text ? (
+                            <Text style={passwordMessage.type === 'success' ? styles.successText : styles.errorText}>
+                                {passwordMessage.text}
+                            </Text>
+                        ) : null}
 
                         <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleChangePassword} disabled={carregandoSenha}>
                             {carregandoSenha ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Alterar Senha</Text>}
@@ -232,10 +252,24 @@ const styles = StyleSheet.create({
     },
     buttonSecondary: {
         backgroundColor: '#f39c12',
+        marginTop: 10, // Espaço entre a mensagem e o botão
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // --- NOVOS ESTILOS PARA AS MENSAGENS ---
+    successText: {
+        color: '#27ae60',
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    errorText: {
+        color: '#e74c3c',
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 10,
     },
 });
