@@ -81,9 +81,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database          
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 # DATABASES = {             # LOCAL
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
@@ -97,9 +94,7 @@ DATABASES = {             # DEPLOY
         conn_max_age=600
     )
 }
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators  
+ 
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -110,8 +105,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'pt-br'
 
@@ -121,10 +114,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'static/'
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -132,8 +121,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Configuração para o WhiteNoise servir os arquivos estáticos de forma eficiente
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -141,34 +129,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication', 
-        #'rest_framework_simplejwt.authentication.JWTAuthentication', #ver se ta ok
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,  # Define o número padrão de itens por página
 }
 
-# Necessário para dj-rest-auth
+
 SITE_ID = 1
 
 AUTH_USER_MODEL = 'api.Usuario'
 
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'none' 
 
 # CORS_ALLOWED_ORIGINS = [        # LOCAL
 #     'http://127.0.0.1:8000',
 #     'http://localhost:8000',
-#     'http://10.0.2.2:8000',      # For Android emulator access to host's localhost
-#     'http://192.168.0.14:8000', # For local network access if server runs on this IP/port
-#     'http://localhost:8081',  # For React Native Metro bundler
-#     # If your frontend runs on a different port (e.g., React, Vue, Angular dev server), add its origin here:
-#     # 'http://localhost:3000',
-#     # 'http://127.0.0.1:3000',
+#     'http://10.0.2.2:8000',     
+#     'http://192.168.0.14:8000',
+#     'http://localhost:8081', 
 # ]
 
 CORS_ALLOWED_ORIGINS = [            # DEPLOY
-    # Adicione a URL do seu frontend em produção aqui
-    # Exemplo: 'https://meu-frontend.onrender.com',
-    #'https://e-doso-backend.onrender.com',
+ 
     'http://localhost:8081',
 ]
 
