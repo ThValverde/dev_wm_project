@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, TextInput, ScrollView, Alert, ActivityIndicator, StyleSheet, TouchableOpacity, Switch } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,14 +15,18 @@ const DIAS_MAP = [
 export default function EditarPrescricao({ route, navigation }) {
     const { prescricao } = route.params;
 
-    // Estados do formulário, inicializados com os dados da prescrição existente
+    // --- INICIALIZAÇÃO DOS ESTADOS COM DADOS EXISTENTES ---
     const [medicamentos, setMedicamentos] = useState([]);
     const [medicamentoId, setMedicamentoId] = useState(prescricao.medicamento.id);
     const [horario, setHorario] = useState(prescricao.horario_previsto.substring(0, 5));
-    const [dosagem, setDosagem] = useState(prescricao.dosagem);
-    const [instrucoes, setInstrucoes] = useState(prescricao.instrucoes);
+    const [instrucoes, setInstrucoes] = useState(prescricao.instrucoes || '');
     const [carregando, setCarregando] = useState(true);
 
+    // Inicializa com os campos de dose reestruturados
+    const [doseValor, setDoseValor] = useState(prescricao.dose_valor ? prescricao.dose_valor.toString() : '');
+    const [doseUnidade, setDoseUnidade] = useState(prescricao.dose_unidade || 'unidade(s)');
+    
+    // Inicializa os dias da semana com os dados da prescrição
     const [diasSemana, setDiasSemana] = useState({
         dia_domingo: prescricao.dia_domingo,
         dia_segunda: prescricao.dia_segunda,
@@ -61,10 +65,10 @@ export default function EditarPrescricao({ route, navigation }) {
             dia_quarta: value, dia_quinta: value, dia_sexta: value, dia_sabado: value,
         });
     };
-    
+
     const handleSave = async () => {
-        if (!medicamentoId || !dosagem.trim()) {
-            Alert.alert("Erro", "Selecione um medicamento e informe a dosagem.");
+        if (!medicamentoId || !doseValor.trim()) {
+            Alert.alert("Erro", "Selecione um medicamento e informe o valor da dosagem.");
             return;
         }
         setCarregando(true);
@@ -74,9 +78,10 @@ export default function EditarPrescricao({ route, navigation }) {
             const payload = {
                 medicamento_id: medicamentoId,
                 horario_previsto: horario,
-                dosagem: dosagem,
+                dose_valor: parseFloat(doseValor),
+                dose_unidade: doseUnidade,
                 instrucoes: instrucoes,
-                ...diasSemana,
+                ...diasSemana
             };
             await axios.patch(`${baseURL}/api/grupos/${groupId}/prescricoes/${prescricao.id}/`, payload, {
                 headers: { 'Authorization': `Token ${token}` }
@@ -84,16 +89,13 @@ export default function EditarPrescricao({ route, navigation }) {
             Alert.alert("Sucesso", "Prescrição atualizada com sucesso.");
             navigation.goBack();
         } catch (error) {
-            console.error("Erro ao atualizar prescrição:", error.response?.data || error.message);
             Alert.alert("Erro", "Não foi possível atualizar a prescrição.");
         } finally {
             setCarregando(false);
         }
     };
-    
-    if (carregando && medicamentos.length === 0) {
-        return <ActivityIndicator size="large" style={{flex: 1, justifyContent: 'center'}} />;
-    }
+
+    if (carregando) return <ActivityIndicator size="large" style={{flex: 1}}/>;
 
     const todosSelecionados = Object.values(diasSemana).every(Boolean);
 
@@ -109,10 +111,24 @@ export default function EditarPrescricao({ route, navigation }) {
             </View>
 
             <Text style={styles.label}>Horário da Dose (HH:MM)*</Text>
-            <TextInput style={styles.input} value={horario} onChangeText={setHorario} maxLength={5} keyboardType="numeric" />
+            <TextInput style={styles.input} value={horario} onChangeText={setHorario} />
             
             <Text style={styles.label}>Dosagem*</Text>
-            <TextInput style={styles.input} placeholder="Ex: 1 comprimido, 10ml" value={dosagem} onChangeText={setDosagem} />
+            <View style={{flexDirection: 'row', gap: 10}}>
+                <TextInput
+                    style={[styles.input, {flex: 1}]}
+                    placeholder="Valor"
+                    value={doseValor}
+                    onChangeText={setDoseValor}
+                    keyboardType="numeric"
+                />
+                <TextInput
+                    style={[styles.input, {flex: 2}]}
+                    placeholder="Unidade (ex: comprimido, ml, g)"
+                    value={doseUnidade}
+                    onChangeText={setDoseUnidade}
+                />
+            </View>
 
             <Text style={styles.label}>Instruções Adicionais</Text>
             <TextInput style={[styles.input, {height: 100, textAlignVertical: 'top'}]} multiline value={instrucoes} onChangeText={setInstrucoes} />
@@ -174,12 +190,12 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     button: {
-        backgroundColor: '#f39c12', // Cor diferente para edição
+        backgroundColor: '#f39c12', // Cor de edição
         borderRadius: 8,
         padding: 15,
         alignItems: 'center',
         marginTop: 20,
-        marginBottom: 40,
+        marginBottom: 30,
     },
     buttonText: {
         color: '#fff',

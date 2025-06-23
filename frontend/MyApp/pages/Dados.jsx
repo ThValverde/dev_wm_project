@@ -176,7 +176,9 @@ useFocusEffect(
                 <View key={p.id} style={styles.prescricaoCard}>
                     <View style={{flex: 1}}>
                         <Text style={styles.prescricaoMedicamento}>{p.medicamento.nome_marca}</Text>
-                        <Text style={styles.prescricaoDetalhe}>{p.dosagem} - às {p.horario_previsto.substring(0, 5)}</Text>
+                        <Text style={styles.prescricaoDetalhe}>
+                          {p.dose_valor} {p.dose_unidade} - às {p.horario_previsto.substring(0, 5)}
+                        </Text>
                     </View>
                     <TouchableOpacity onPress={() => navigation.navigate('EditarPrescricao', { prescricao: p, idosoId: idoso.id })} style={styles.actionIcon}>
                         <Ionicons name="pencil-outline" size={22} color="#3498db" />

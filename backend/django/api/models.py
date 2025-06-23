@@ -262,10 +262,12 @@ class Medicamento(models.Model):
         choices=OpcoesFormaFarmaceutica.choices
     )
     # Campo para a quantidade em estoque
-    quantidade_estoque = models.PositiveIntegerField(
+    quantidade_estoque = models.DecimalField(
         verbose_name="Quantidade em Estoque (Embalagens)", 
-        default=0, 
-        help_text="Número de caixas/frascos em estoque."
+        max_digits = 10,
+        decimal_places = 2,
+        default = 0.00,
+        help_text = "Quantidade de embalagens disponíveis no estoque. Ex: 10 comprimidos, 5 frascos de 100ml, etc."
     )
     
     class Meta:
@@ -320,7 +322,20 @@ class Prescricao(models.Model):
     # Campo para o horário previsto da administração da dose
     horario_previsto = models.TimeField(verbose_name="Horário da Dose")
     # Campo para a dosagem (ex: "1 comprimido", "5ml")
-    dosagem = models.CharField(max_length=100, help_text="Ex: 1 comprimido, 5ml, 2 gotas")
+    dose_valor = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        default =  1.00,
+        verbose_name="Valor da Dose",
+        help_text="Ex: 1.5 para 1,5 comprimidos ou 10 para 10ml"
+    )
+    # Campo para a unidade da dosagem (ex: "mg", "ml", "comprimido")
+    dose_unidade = models.CharField(
+        max_length=20,
+        default = "unidade(s)",
+        verbose_name="Unidade da Dose",
+        help_text="Ex: mg, ml, comprimido, gota, etc."
+    )
     # Campo de texto para instruções adicionais
     instrucoes = models.TextField(blank=True, help_text="Ex: Administrar com alimentos.")
     # Campo booleano para ativar ou desativar a prescrição

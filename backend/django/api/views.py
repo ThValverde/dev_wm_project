@@ -270,15 +270,16 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
         prescricao = self.get_object()
         medicamento = prescricao.medicamento
 
+        dose = prescricao.dose_valor
         # Verifica se há estoque disponível
-        if medicamento.quantidade_estoque <= 0:
+        if medicamento.quantidade_estoque < dose:
             return Response(
-                {'error': 'Estoque do medicamento zerado.'}, 
+                {'error': 'Estoque insuficiente para administrar a dose.'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # Decrementa o estoque e salva
-        medicamento.quantidade_estoque -= 1
+        medicamento.quantidade_estoque -= dose
         medicamento.save()
 
         # Prepara os dados para o log de administração
@@ -412,8 +413,9 @@ class LogAdministracaoViewSet(mixins.RetrieveModelMixin,
         log = self.get_object()
         medicamento = log.prescricao.medicamento
 
+        dose_devolvida = log.prescricao.dose_valor
         # Adiciona 1 de volta ao estoque do medicamento
-        medicamento.quantidade_estoque += 1
+        medicamento.quantidade_estoque += dose_devolvida
         medicamento.save()
         
         # Chama o método de exclusão original para deletar o log

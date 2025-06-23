@@ -23,7 +23,8 @@ export default function CadastroPrescricao({ route, navigation }) {
     const [medicamentos, setMedicamentos] = useState([]);
     const [medicamentoId, setMedicamentoId] = useState(null);
     const [horario, setHorario] = useState('08:00');
-    const [dosagem, setDosagem] = useState('');
+    const [doseValor, setDoseValor] = useState('');
+    const [doseUnidade, setDoseUnidade] = useState('comprimido(s)');
     const [instrucoes, setInstrucoes] = useState('');
     const [carregando, setCarregando] = useState(true);
 
@@ -82,7 +83,8 @@ export default function CadastroPrescricao({ route, navigation }) {
                 idoso_id: idosoId,
                 medicamento_id: medicamentoId,
                 horario_previsto: horario,
-                dosagem: dosagem,
+                dose_valor: parseFloat(doseValor),
+                dose_unidade: doseUnidade,
                 instrucoes: instrucoes,
                 ativo: true, // Prescrição começa ativa por padrão
                 frequencia: 'DI', // Frequência diária como padrão, pode ser alterado se necessário
@@ -123,8 +125,21 @@ export default function CadastroPrescricao({ route, navigation }) {
             <TextInput style={styles.input} value={horario} onChangeText={setHorario} maxLength={5} keyboardType="numeric" />
             
             <Text style={styles.label}>Dosagem*</Text>
-            <TextInput style={styles.input} placeholder="Ex: 1 comprimido, 10ml" value={dosagem} onChangeText={setDosagem} />
-
+            <View style={{flexDirection: 'row', gap: 10}}>
+                <TextInput
+                    style={[styles.input, {flex: 1}]}
+                    placeholder="Valor"
+                    value={doseValor}
+                    onChangeText={setDoseValor}
+                    keyboardType="numeric"
+                />
+                <TextInput
+                    style={[styles.input, {flex: 2}]}
+                    placeholder="Unidade (ex: comprimido, ml, g)"
+                    value={doseUnidade}
+                    onChangeText={setDoseUnidade}
+                />
+            </View>
             <Text style={styles.label}>Instruções Adicionais</Text>
             <TextInput style={[styles.input, {height: 100, textAlignVertical: 'top'}]} multiline value={instrucoes} onChangeText={setInstrucoes} />
 

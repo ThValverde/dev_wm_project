@@ -100,7 +100,9 @@ function Horario({ navigation }) {
               <View style={styles.medicationInfo}>
                 <Text style={styles.medicationName}>{p.medicamento.nome_marca}</Text>
                 <Text style={styles.patientName}>Para: {p.idoso}</Text>
-                <Text style={styles.quantity}>{p.dosagem}</Text>
+                <Text style={styles.quantity}>
+                  {p.dose_valor} {p.dose_unidade}
+                </Text>
               </View>
               <View style={styles.actionsContainer}>
                 <TouchableOpacity onPress={() => navigation.navigate('Administracao', { prescricao: p })} style={styles.actionButton}>
