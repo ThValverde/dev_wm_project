@@ -21,8 +21,6 @@ from .models import (
 # Obtém o modelo de usuário ativo do Django.
 Usuario = get_user_model()
 
-# --- ORDEM AJUSTADA: Serializers base primeiro ---
-
 class ContatoParenteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContatoParente
@@ -64,7 +62,7 @@ class PrescricaoSerializer(serializers.ModelSerializer):
             grupo_pk = view.kwargs.get('grupo_pk') if view else None
             
             if not grupo_pk:
-                # Isso não deveria acontecer se a URL estiver correta.
+                
                 raise serializers.ValidationError("A URL deve conter o ID do grupo.")
 
             # 'data' contém os objetos Idoso e Medicamento, validados pelo PrimaryKeyRelatedField.
@@ -81,7 +79,6 @@ class PrescricaoSerializer(serializers.ModelSerializer):
 
             return data
 
-# --- CORREÇÃO PRINCIPAL AQUI ---
 class LogAdministracaoSerializer(serializers.ModelSerializer):
     """
     Serializer para o modelo LogAdministracao.
@@ -89,8 +86,6 @@ class LogAdministracaoSerializer(serializers.ModelSerializer):
     """
     # Exibe o nome do usuário responsável em vez do ID.
     usuario_responsavel = serializers.StringRelatedField()
-    # CORREÇÃO: Aninha o PrescricaoSerializer para incluir todos os detalhes.
-    # Isso garante que o frontend receba os dados do medicamento e do idoso.
     prescricao = PrescricaoSerializer(read_only=True)
 
     class Meta:
@@ -98,8 +93,6 @@ class LogAdministracaoSerializer(serializers.ModelSerializer):
         # Define os campos a serem incluídos na serialização.
         fields = ['id', 'data_hora_administracao', 'status', 'observacoes', 'usuario_responsavel', 'prescricao']
 
-
-# --- Serializers restantes ---
 
 class IdosoListSerializer(serializers.ModelSerializer):
     class Meta:
