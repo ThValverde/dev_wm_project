@@ -211,7 +211,6 @@ class Medicamento(models.Model):
         MICROGRAMA_POR_GRAMA = 'mcg/g', 'mcg/g'
         MILIGRAMA_POR_GRAMA = 'mg/g', 'mg/g'
         MG_POR_ML = 'mg/ml', 'mg/ml'
-        UNIDADE = 'UN', 'Unidade'
         OUTRO = 'OUT', 'Outro'
 
     # Chave estrangeira para o Grupo, indicando a qual grupo este medicamento pertence
