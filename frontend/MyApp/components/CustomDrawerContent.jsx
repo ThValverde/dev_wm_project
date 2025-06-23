@@ -47,7 +47,7 @@ function CustomDrawerContent(props) {
         {/* DrawerItemList renderiza os itens que você definiu no App.jsx */}
         <DrawerItemList {...props} />
 
-        {/* Aqui você pode adicionar outros itens customizados que não estão no App.jsx */}
+        {/* Adicionar outros itens customizados que não estão no App.jsx */}
         {/* Exemplo de item condicional para administradores */}
         {isAdmin && (
            <DrawerItem
@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
     // Novo estilos para o cabeçalho
     headerContainer: {
         padding: 20,
-        paddingTop: 50, // Aumente para um valor muito maior
-        marginTop: 30,   // Adicione uma margem extra no topo
+        paddingTop: 50, 
+        marginTop: 30,   
         marginBottom: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
