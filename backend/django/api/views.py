@@ -48,9 +48,11 @@ class MyProfileView(generics.RetrieveUpdateAPIView):
         """Retorna o objeto do usuário logado."""
         return self.request.user
 
-class ChangePasswordView(generics.UpdateAPIView):
+# --- CORREÇÃO APLICADA AQUI ---
+class ChangePasswordView(generics.GenericAPIView):
     """
     View para que o usuário autenticado possa alterar sua própria senha.
+    Agora aceita requisições POST.
     """
     serializer_class = ChangePasswordSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -59,8 +61,8 @@ class ChangePasswordView(generics.UpdateAPIView):
         """Retorna o objeto do usuário logado."""
         return self.request.user
 
-    def update(self, request, *args, **kwargs):
-        """Processa a alteração da senha."""
+    def post(self, request, *args, **kwargs):
+        """Processa a alteração da senha via POST."""
         self.object = self.get_object()
         serializer = self.get_serializer(data=request.data)
 
@@ -169,11 +171,9 @@ class GrupoViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Grupo com este código de acesso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         perfil_usuario = request.user.perfil
-        # Verifica se o usuário já é membro do grupo
         if grupo in perfil_usuario.grupos.all():
             return Response({'detail': f'Você já é membro do grupo {grupo.nome}.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Adiciona o usuário ao grupo e define sua permissão como MEMBRO se ainda não tiver uma.
         perfil_usuario.grupos.add(grupo)
         if not perfil_usuario.permissao:
             perfil_usuario.permissao = PerfilUsuario.Permissao.MEMBRO
@@ -185,8 +185,6 @@ class GrupoViewSet(viewsets.ModelViewSet):
     def remover_membro(self, request, pk=None):
         """
         Remove um membro do grupo. Apenas o admin pode fazer isso.
-        Espera um 'user_id' no corpo da requisição.
-        URL: /api/grupos/{pk}/remover-membro/
         """
         grupo = self.get_object()
         user_id_to_remove = request.data.get('user_id')
@@ -200,20 +198,16 @@ class GrupoViewSet(viewsets.ModelViewSet):
         except (Usuario.DoesNotExist, PerfilUsuario.DoesNotExist):
             return Response({'detail': 'Usuário não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         
-        # O admin não pode remover a si mesmo
         if user_to_remove == request.user:
             return Response({'detail': 'O administrador não pode remover a si mesmo do grupo.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Verifica se o alvo é realmente membro do grupo
         if grupo not in perfil_alvo.grupos.all():
             return Response({'detail': 'Este usuário não é membro do grupo.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Remove o grupo do perfil do usuário
         perfil_alvo.grupos.remove(grupo)
         
-        # Se o usuário não estiver em mais nenhum grupo, podemos resetar a permissão dele
         if perfil_alvo.grupos.count() == 0:
-            perfil_alvo.permissao = PerfilUsuario.Permissao.MEMBRO # Ou algum outro padrão
+            perfil_alvo.permissao = PerfilUsuario.Permissao.MEMBRO
             perfil_alvo.save()
 
         return Response({'detail': f'Usuário {user_to_remove.nome_completo} removido do grupo.'}, status=status.HTTP_200_OK)
@@ -222,249 +216,121 @@ class GrupoViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """
         Sobrescreve o método destroy para garantir que o admin possa deletar o grupo.
-        A permissão IsGroupAdmin já protege esta rota.
         """
         grupo = self.get_object()
-        # Ao deletar o grupo, os relacionamentos ManyToMany são limpos automaticamente.
-        # Os modelos com ForeignKey e on_delete=CASCADE (Idoso, Medicamento, etc.) serão deletados em cascata.
         self.perform_destroy(grupo)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-# --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
+# --- Views de Recursos do Grupo (Idosos, Medicamentos, etc.) ---
 
 class IdosoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar Idosos dentro de um grupo específico.
-    Acessado via URL aninhada: /api/grupos/{grupo_pk}/idosos/
-    """
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-
     def get_serializer_class(self):
-        """Usa um serializer simplificado para a lista e um detalhado para as outras ações."""
         if self.action == 'list':
             return IdosoListSerializer
         return IdosoDetailSerializer
-
     def get_queryset(self):
-        """Filtra os idosos para retornar apenas aqueles do grupo especificado na URL."""
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             return Idoso.objects.filter(grupo_id=grupo_pk)
-        return Idoso.objects.none() # Retorna queryset vazio se não houver grupo_pk
-
+        return Idoso.objects.none()
     def perform_create(self, serializer):
-        """Associa o novo idoso ao grupo correto ao ser criado."""
         grupo_pk = self.kwargs.get('grupo_pk')
         grupo = get_object_or_404(Grupo, pk=grupo_pk)
         serializer.save(grupo=grupo)
 
 class MedicamentoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar Medicamentos dentro de um grupo específico.
-    Acessado via URL aninhada: /api/grupos/{grupo_pk}/medicamentos/
-    """
     serializer_class = MedicamentoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
     pagination_class = None
-
     def get_queryset(self):
-        """Filtra os medicamentos para retornar apenas aqueles do grupo especificado na URL."""
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             return Medicamento.objects.filter(grupo_id=grupo_pk)
         return Medicamento.objects.none()
-
     def perform_create(self, serializer):
-        """Associa o novo medicamento ao grupo correto ao ser criado."""
         grupo_pk = self.kwargs.get('grupo_pk')
         grupo = get_object_or_404(Grupo, pk=grupo_pk)
         serializer.save(grupo=grupo)
 
-
 class PrescricaoViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar Prescrições de medicamentos para idosos dentro de um grupo.
-    Acessado via URL aninhada: /api/grupos/{grupo_pk}/prescricoes/
-    """
     serializer_class = PrescricaoSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
     pagination_class = None
-
     def get_queryset(self):
-        """Filtra as prescrições para retornar apenas aquelas de idosos do grupo especificado."""
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             return Prescricao.objects.filter(idoso__grupo_id=grupo_pk)
         return Prescricao.objects.none()
-
     def perform_create(self, serializer):
-        """
-        Salva a prescrição. A validação (incluindo a verificação de grupo)
-        já foi feita no serializer.
-        """
         serializer.save()
     
     @action(detail=True, methods=['post'], url_path='administrar')
-    @transaction.atomic # Garante que as operações no banco de dados sejam atômicas
-    @transaction.atomic # Garante que as operações no banco de dados sejam atômicas
+    @transaction.atomic
     def administrar(self, request, pk=None, grupo_pk=None):
-        """
-        Ação para registrar a administração de um medicamento de uma prescrição.
-        Cria um LogAdministracao e decrementa o estoque do medicamento.
-        Permite fornecer uma 'data_hora_administracao' (formato ISO) no corpo
-        da requisição para registros retroativos. Se não for fornecida, usa a data/hora atual.
-        URL: /api/grupos/{grupo_pk}/prescricoes/{pk}/administrar/
-        """
         prescricao = self.get_object()
         medicamento = prescricao.medicamento
-
         dose = prescricao.dose_valor
-        # Verifica se há estoque disponível
         if medicamento.quantidade_estoque < dose:
-            return Response(
-                {'error': 'Estoque insuficiente para administrar a dose.'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Decrementa o estoque e salva
+            return Response({'error': 'Estoque insuficiente para administrar a dose.'}, status=status.HTTP_400_BAD_REQUEST)
         medicamento.quantidade_estoque -= dose
         medicamento.save()
-
-        # Prepara os dados para o log de administração
-        log_data = {
-            "prescricao": prescricao,
-            "usuario_responsavel": request.user,
-            "status": request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO),
-            "observacoes": request.data.get('observacoes', '')
-        }
-
-        # Permite registrar com uma data/hora customizada (para registros retroativos)
+        log_data = {"prescricao": prescricao, "usuario_responsavel": request.user, "status": request.data.get('status', LogAdministracao.StatusDose.ADMINISTRADO), "observacoes": request.data.get('observacoes', '')}
         custom_datetime_str = request.data.get('data_hora_administracao')
         if custom_datetime_str:
             try:
                 custom_datetime = parse_datetime(custom_datetime_str)
-                if not custom_datetime: # parse_datetime retorna None para strings inválidas
-                    raise ValueError
+                if not custom_datetime: raise ValueError
                 log_data['data_hora_administracao'] = custom_datetime
             except (ValueError, TypeError):
-                return Response(
-                    {'error': 'O formato de data_hora_administracao é inválido. Use o formato ISO (ex: YYYY-MM-DDTHH:MM:SSZ).'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-        # Cria o registro de log
+                return Response({'error': 'O formato de data_hora_administracao é inválido. Use o formato ISO (ex: YYYY-MM-DDTHH:MM:SSZ).'}, status=status.HTTP_400_BAD_REQUEST)
         log = LogAdministracao.objects.create(**log_data)
-
         log_serializer = LogAdministracaoSerializer(log)
         return Response(log_serializer.data, status=status.HTTP_201_CREATED)
-    
+
 class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet para listar os usuários (membros) de um grupo específico.
-    Acessado via URL aninhada: /api/grupos/{grupo_pk}/usuarios/
-    """
     serializer_class = PerfilUsuarioSerializer
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-
     def get_queryset(self):
-        """Filtra os perfis de usuário para retornar apenas os membros do grupo especificado."""
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
             grupo = get_object_or_404(Grupo, pk=grupo_pk)
-            # 'membros' é o related_name do ManyToManyField 'grupos' em PerfilUsuario
             return grupo.membros.all()
         return PerfilUsuario.objects.none()
-
-    @action(
-        detail=True, 
-        methods=['post'], 
-        url_path='vincular-idoso',
-        permission_classes=[IsGroupMember] # Apenas membros do grupo podem vincular
-    )
+    @action(detail=True, methods=['post'], url_path='vincular-idoso', permission_classes=[IsGroupMember])
     def vincular_idoso(self, request, pk=None, grupo_pk=None):
-        """
-        Ação para vincular um usuário (membro do grupo) como responsável por um idoso.
-        URL: /api/grupos/{grupo_pk}/usuarios/{pk}/vincular-idoso/
-        """
-        perfil_usuario_alvo = self.get_object() # O usuário a ser vinculado
+        perfil_usuario_alvo = self.get_object()
         idoso_id = request.data.get('idoso_id')
-
-        if not idoso_id:
-            return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Garante que o idoso pertence ao mesmo grupo
+        if not idoso_id: return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
         perfil_usuario_alvo.responsaveis.add(idoso)
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
-
-    @action(
-        detail=True, 
-        methods=['post'], 
-        url_path='desvincular-idoso',
-        permission_classes=[IsGroupMember] # Apenas membros do grupo podem desvincular
-    )
+    @action(detail=True, methods=['post'], url_path='desvincular-idoso', permission_classes=[IsGroupMember])
     def desvincular_idoso(self, request, pk=None, grupo_pk=None):
-        """
-        Ação para remover o vínculo de responsabilidade entre um usuário e um idoso.
-        URL: /api/grupos/{grupo_pk}/usuarios/{pk}/desvincular-idoso/
-        """
         perfil_usuario_alvo = self.get_object()
         idoso_id = request.data.get('idoso_id')
-
-        if not idoso_id:
-            return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        # Garante que o idoso pertence ao mesmo grupo
+        if not idoso_id: return Response({'error': 'O idoso_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
         idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
         perfil_usuario_alvo.responsaveis.remove(idoso)
         return Response(self.get_serializer(perfil_usuario_alvo).data, status=status.HTTP_200_OK)
 
-class LogAdministracaoViewSet(mixins.RetrieveModelMixin,
-                              mixins.ListModelMixin,
-                              mixins.DestroyModelMixin,
-                              viewsets.GenericViewSet):
-    """
-    ViewSet para listar e excluir logs de administração de um grupo.
-    A criação é feita pela ação 'administrar' na PrescricaoViewSet.
-    """
+class LogAdministracaoViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
     serializer_class = LogAdministracaoSerializer
-    # A permissão base para ver a lista continua sendo IsGroupMember
     permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-
     def get_queryset(self):
-        # ... (sem alterações aqui) ...
         grupo_pk = self.kwargs.get('grupo_pk')
         if grupo_pk:
-            return LogAdministracao.objects.filter(
-                prescricao__idoso__grupo_id=grupo_pk
-            ).order_by('-data_hora_administracao')
+            return LogAdministracao.objects.filter(prescricao__idoso__grupo_id=grupo_pk).order_by('-data_hora_administracao')
         return LogAdministracao.objects.none()
-
-    # NOVO: Método para definir permissões por ação
     def get_permissions(self):
-        """
-        Sobrescreve as permissões padrão para exigir que apenas um admin
-        possa deletar um log.
-        """
         if self.action == 'destroy':
-            # Para a ação de deletar, exige que o usuário seja admin do grupo
             return [permissions.IsAuthenticated(), IsGroupAdmin()]
-        # Para todas as outras ações (list, retrieve), mantém a permissão padrão
         return super().get_permissions()
-
-    # NOVO: Sobrescreve o método de exclusão para adicionar a lógica de estoque
-    @transaction.atomic # Garante que ou tudo funciona, ou nada é alterado.
+    @transaction.atomic
     def destroy(self, request, *args, **kwargs):
-        """
-        Ao deletar um log, adiciona a quantidade do medicamento de volta ao estoque.
-        """
         log = self.get_object()
         medicamento = log.prescricao.medicamento
-
         dose_devolvida = log.prescricao.dose_valor
-        # Adiciona 1 de volta ao estoque do medicamento
         medicamento.quantidade_estoque += dose_devolvida
         medicamento.save()
-        
-        # Chama o método de exclusão original para deletar o log
         return super().destroy(request, *args, **kwargs)

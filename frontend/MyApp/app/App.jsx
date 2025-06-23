@@ -1,5 +1,4 @@
 import 'react-native-gesture-handler';
-// Adicionado useState, useCallback, useFocusEffect
 import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { NavigationContainer, CommonActions } from '@react-navigation/native';
@@ -8,7 +7,6 @@ import { createDrawerNavigator, DrawerItemList } from '@react-navigation/drawer'
 import { Alert, TouchableOpacity, View, Text, Platform, Clipboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Adicionado axios e baseURL para a chamada da API
 import axios from 'axios';
 import baseURL from '../config/api';
 
@@ -37,12 +35,9 @@ import GerenciarLar from '../pages/GerenciarLar';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-// Componente para renderizar o conteúdo customizado do menu lateral
 function CustomDrawerContent(props) {
-  // Estado para controlar a visibilidade dos botões de admin
   const [isUserAdmin, setIsUserAdmin] = useState(false);
 
-  // useFocusEffect garante que a verificação de admin seja feita toda vez que o menu for aberto
   useFocusEffect(
     useCallback(() => {
       const checkAdminStatus = async () => {
@@ -53,7 +48,6 @@ function CustomDrawerContent(props) {
     }, [])
   );
   
-  // Função para buscar e exibir o código de acesso
   const handleGetAccessCode = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
@@ -112,8 +106,6 @@ function CustomDrawerContent(props) {
     <View style={{ flex: 1 }}>
       <DrawerItemList {...props} />
 
-      {/* ### CORREÇÃO APLICADA AQUI ### */}
-      {/* Botões de gerenciamento visíveis apenas para administradores */}
       {isUserAdmin && (
         <>
           <TouchableOpacity
@@ -142,7 +134,6 @@ function CustomDrawerContent(props) {
         </>
       )}
 
-      {/* Botão para retornar à tela de seleção de lar */}
       <TouchableOpacity
         style={{ paddingHorizontal: 20, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#eee' }}
         onPress={() => {
@@ -157,7 +148,6 @@ function CustomDrawerContent(props) {
         </View>
       </TouchableOpacity>
 
-      {/* Botão de Sair */}
       <TouchableOpacity
         style={{ padding: 20 }}
         onPress={handleLogout}
@@ -181,9 +171,7 @@ function MainDrawerNavigator() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: true,
-        drawerStyle: {
-          paddingTop: 40
-        }
+        drawerStyle: { paddingTop: 40 }
       }}
     >
       <Drawer.Screen name="Início" component={Inicio} />
@@ -203,7 +191,6 @@ function App() {
         headerBackTitle: 'Voltar', 
         headerTintColor: '#000',
         }}>
-        {/* ... Telas de Login, Cadastro, SelecionarLar, CriarLar, Main, Dados, CadastroIdoso, EditarIdoso ... */}
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Cadastro" component={Cadastro} />
         <Stack.Screen name="SelecionarLar" component={SelecionarLar} />
@@ -212,6 +199,17 @@ function App() {
         <Stack.Screen name="Dados" component={Dados} options={{ headerShown: true, title: 'Perfil do Idoso' }}/>
         <Stack.Screen name="CadastroIdoso" component={CadastroIdoso} options={{ headerShown: false }} />
         <Stack.Screen name="EditarIdoso" component={EditarIdoso} options={{ headerShown: false }} />
+        {/* --- TELA DE PERFIL ADICIONADA AO STACK PRINCIPAL --- */}
+        <Stack.Screen 
+          name="PerfilUsuario"
+          component={PerfilUsuario}
+          options={{ 
+            headerShown: true,
+            title: 'Meu Perfil',
+            headerStyle: { backgroundColor: '#2c3e50' },
+            headerTintColor: '#fff'
+          }}
+        />
         <Stack.Screen
           name="GerenciarLar"
           component={GerenciarLar}
@@ -222,7 +220,6 @@ function App() {
             headerTintColor: '#fff'
           }}
         />
-        {/* Adicionando as novas telas de medicamento à pilha de navegação */}
         <Stack.Screen
           name="DadosMedicamento"
           component={DadosMedicamento}
