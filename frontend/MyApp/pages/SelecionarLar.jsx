@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   Alert, 
-  Platform
+  Platform,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,7 +19,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
 export default function SelecionarLar({ navigation }) {
-  const [lares, setLares] = useState([]);
+  // --- ESTADOS PARA O FILTRO E DADOS ---
+  const [todosLares, setTodosLares] = useState([]); // Lista original
+  const [laresFiltrados, setLaresFiltrados] = useState([]); // Lista para exibição
+  const [termoBusca, setTermoBusca] = useState(''); // Termo de busca instantâneo
+  const [termoDebounced, setTermoDebounced] = useState(''); // Termo após delay
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
@@ -38,7 +44,7 @@ export default function SelecionarLar({ navigation }) {
         headers: { 'Authorization': `Token ${token}` }
       });
       
-      setLares(response.data);
+      setTodosLares(response.data);
 
     } catch (err) {
       console.error("Erro ao carregar lares:", err.response ? err.response.data : err.message);
@@ -54,32 +60,42 @@ export default function SelecionarLar({ navigation }) {
     }, [])
   );
 
+  // --- LÓGICA DE DEBOUNCE ---
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setTermoDebounced(termoBusca);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [termoBusca]);
+
+  // --- LÓGICA DE FILTRAGEM ---
+  useEffect(() => {
+    if (termoDebounced.trim() === '') {
+      setLaresFiltrados(todosLares);
+    } else {
+      const filtrados = todosLares.filter(lar =>
+        lar.nome.toLowerCase().includes(termoDebounced.toLowerCase())
+      );
+      setLaresFiltrados(filtrados);
+    }
+  }, [termoDebounced, todosLares]);
+
   const handleAction = () => {
-    // Esta navegação pode ser para uma tela que permite criar ou entrar em um lar.
-    // Se você não tem uma tela unificada, pode querer mostrar um menu ou duas opções.
     navigation.navigate('CriarLar'); 
   };
 
-  // ### LÓGICA CORRIGIDA E SIMPLIFICADA ###
   const handleSelecionarLar = async (lar) => {
     try {
-      // 1. Pega os dados do usuário logado (salvos durante o login)
       const userDataString = await AsyncStorage.getItem('userData');
-      if (!userDataString) {
-        throw new Error("Dados do usuário não encontrados. Por favor, faça o login novamente.");
-      }
+      if (!userDataString) throw new Error("Dados do usuário não encontrados. Faça o login novamente.");
+      
       const currentUser = JSON.parse(userDataString);
-
-      // 2. Compara o ID do usuário logado com o ID do admin do lar.
-      // Esta é a forma mais direta e segura de verificar a permissão de admin.
-      // O objeto 'lar' da sua API já contém 'lar.admin.id'.
       const isUserAdmin = currentUser.id === lar.admin.id;
 
-      // 3. Salva o ID do grupo selecionado e o status de admin ('true' ou 'false')
       await AsyncStorage.setItem('selectedGroupId', lar.id.toString());
       await AsyncStorage.setItem('isCurrentUserAdmin', String(isUserAdmin));
       
-      // 4. Navega para a tela principal
       navigation.navigate('Main');
 
     } catch (error) {
@@ -116,6 +132,24 @@ export default function SelecionarLar({ navigation }) {
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
+  const renderLarItem = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.larCard, { borderLeftColor: getRandomColor() }]}
+      onPress={() => handleSelecionarLar(item)}
+    >
+      <View style={styles.larHeader}>
+        <Text style={styles.larNome}>{item.nome}</Text>
+        <Ionicons name="chevron-forward" size={20} color="#7f8c8d" />
+      </View>
+      <View style={styles.larStats}>
+        <View style={styles.statItem}>
+          <Ionicons name="people-outline" size={16} color="#7f8c8d" />
+          <Text style={styles.statText}>{item.membros.length} Membro(s)</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   const renderContentList = () => {
     if (carregando) {
       return <View style={styles.feedbackContainer}><ActivityIndicator size="large" color="#2c3e50" /></View>;
@@ -128,35 +162,22 @@ export default function SelecionarLar({ navigation }) {
         </View>
       );
     }
-    if (lares.length === 0) {
-      return (
-        <View style={styles.feedbackContainer}>
-          <Ionicons name="home-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyText}>Você ainda não faz parte de nenhum lar.</Text>
-        </View>
-      );
-    }
     return (
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {lares.map((lar) => (
-          <TouchableOpacity
-            key={lar.id}
-            style={[styles.larCard, { borderLeftColor: getRandomColor() }]}
-            onPress={() => handleSelecionarLar(lar)}
-          >
-            <View style={styles.larHeader}>
-              <Text style={styles.larNome}>{lar.nome}</Text>
-              <Ionicons name="chevron-forward" size={20} color="#7f8c8d" />
-            </View>
-            <View style={styles.larStats}>
-              <View style={styles.statItem}>
-                <Ionicons name="people-outline" size={16} color="#7f8c8d" />
-                <Text style={styles.statText}>{lar.membros.length} Membro(s)</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={laresFiltrados}
+        renderItem={renderLarItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <View style={styles.feedbackContainer}>
+            <Ionicons name="home-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyText}>
+              {todosLares.length > 0 ? 'Nenhum lar encontrado.' : 'Você ainda não faz parte de nenhum lar.'}
+            </Text>
+          </View>
+        }
+      />
     );
   };
 
@@ -173,7 +194,7 @@ export default function SelecionarLar({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-      <SearchBar />
+      <SearchBar onSearch={setTermoBusca} placeholder="Buscar por nome do lar..." />
       <View style={styles.actionCardContainer}>
         <TouchableOpacity style={styles.actionCard} onPress={handleAction}>
           <View style={styles.actionCardIcon}><Ionicons name="add" size={32} color="#fff" /></View>
@@ -211,5 +232,5 @@ const styles = StyleSheet.create({
   statText: { marginLeft: 4, fontSize: 14, color: '#7f8c8d' },
   feedbackContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
   errorText: { marginTop: 16, fontSize: 16, color: '#e74c3c', textAlign: 'center' },
-  emptyText: { marginTop: 16, fontSize: 18, fontWeight: 'bold', color: '#7f8c8d', textAlign: 'center' },
+  emptyText: { marginTop: 16, fontSize: 18, fontWeight: '600', color: '#7f8c8d', textAlign: 'center' },
 });

@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import SearchBar from '../components/SearchBar';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,18 +8,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
 
 function Inicio({ navigation }) {
-  const [idosos, setIdosos] = useState([]);
+  // --- ESTADOS PARA O FILTRO, DEBOUNCE E DADOS ---
+  const [todosIdosos, setTodosIdosos] = useState([]); // Guarda a lista original completa
+  const [idososFiltrados, setIdososFiltrados] = useState([]); // Guarda a lista a ser exibida
+  const [termoBusca, setTermoBusca] = useState(''); // Termo de busca instantâneo do input
+  const [termoDebounced, setTermoDebounced] = useState(''); // Termo usado para o filtro, após o delay
+
   const [carregando, setCarregando] = useState(true);
   const [carregandoMais, setCarregandoMais] = useState(false);
   const [erro, setErro] = useState(null);
   const [nextPageUrl, setNextPageUrl] = useState(null);
 
-  // Função para buscar dados, agora preparada para paginação
   const buscarIdosos = async (url) => {
-    // Se for para carregar mais e já estiver carregando, não faz nada
     if (url && carregandoMais) return;
     
-    // Define o estado de loading apropriado
     if (!url) {
       setCarregando(true);
     } else {
@@ -32,18 +34,12 @@ function Inicio({ navigation }) {
       if (!token || !groupId) throw new Error('Sessão inválida.');
 
       const finalUrl = url || `${baseURL}/api/grupos/${groupId}/idosos/`;
-
-      const response = await axios.get(finalUrl, {
-        headers: { 'Authorization': `Token ${token}` }
-      });
+      const response = await axios.get(finalUrl, { headers: { 'Authorization': `Token ${token}` } });
       
-      // CORREÇÃO: Pega os dados de dentro da chave "results"
-      const novosIdosos = response.data.results;
-
-      // Se for uma nova página, adiciona ao final da lista, senão, substitui a lista
-      setIdosos(prevIdosos => url ? [...prevIdosos, ...novosIdosos] : novosIdosos);
+      const novosIdosos = response.data.results || [];
       
-      // Guarda a URL da próxima página para o botão "Carregar Mais"
+      setTodosIdosos(prevIdosos => url ? [...prevIdosos, ...novosIdosos] : novosIdosos);
+      
       setNextPageUrl(response.data.next);
       setErro(null);
 
@@ -55,30 +51,49 @@ function Inicio({ navigation }) {
     }
   };
   
-  // useFocusEffect para garantir que a busca seja feita sempre que a tela for focada
   useFocusEffect(
     useCallback(() => {
-      buscarIdosos(); // Busca a primeira página de resultados
+      buscarIdosos();
     }, [])
   );
+
+  // --- LÓGICA DE DEBOUNCE ---
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setTermoDebounced(termoBusca);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [termoBusca]);
+
+  // --- LÓGICA DE FILTRAGEM ---
+  useEffect(() => {
+    if (termoDebounced.trim() === '') {
+      setIdososFiltrados(todosIdosos);
+    } else {
+      const filtrados = todosIdosos.filter(idoso =>
+        idoso.nome_completo.toLowerCase().includes(termoDebounced.toLowerCase())
+      );
+      setIdososFiltrados(filtrados);
+    }
+  }, [termoDebounced, todosIdosos]);
+
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('Dados', { idosoId: item.id })}
     >
-      {/* <Image 
-        source={{ uri: `https://avatar.iran.liara.run/public/boy?username=${item.nome_completo}` }} 
-        style={styles.image}
-      /> */}
       <Text style={styles.nome}>{item.nome_completo}</Text>
     </TouchableOpacity>
   );
 
-  // Componente do rodapé que mostra o botão ou o indicador de carregamento
   const renderFooter = () => {
     if (carregandoMais) return <ActivityIndicator size="large" color="#2c3e50" style={{ marginVertical: 20 }} />;
-    if (!nextPageUrl) return null; // Não mostra nada se não houver mais páginas
+    // Oculta o botão se não houver mais páginas ou se uma busca estiver ativa
+    if (!nextPageUrl || termoDebounced.trim() !== '') return null;
     
     return (
       <TouchableOpacity style={styles.loadMoreButton} onPress={() => buscarIdosos(nextPageUrl)}>
@@ -87,7 +102,7 @@ function Inicio({ navigation }) {
     );
   };
   
-  if (carregando && idosos.length === 0) {
+  if (carregando && todosIdosos.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#2c3e50" />
@@ -97,17 +112,23 @@ function Inicio({ navigation }) {
   
   return (
     <View style={styles.container}>
-      <SearchBar />
+      <SearchBar onSearch={setTermoBusca} placeholder="Buscar por nome do idoso..." />
+
       {erro ? (
         <View style={styles.centered}><Text style={styles.infoText}>{erro}</Text></View>
       ) : (
         <FlatList
-          data={idosos}
+          data={idososFiltrados}
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           numColumns={2}
           contentContainerStyle={styles.grid}
-          ListEmptyComponent={<Text style={styles.infoText}>Nenhum idoso cadastrado neste grupo.</Text>}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={
+            <Text style={styles.infoText}>
+              {todosIdosos.length > 0 ? 'Nenhum resultado encontrado.' : 'Nenhum idoso cadastrado neste grupo.'}
+            </Text>
+          }
           ListFooterComponent={renderFooter}
         />
       )}
@@ -119,74 +140,15 @@ function Inicio({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff'
-  },
-  grid: { 
-    padding: 8,
-  },
-  card: { 
-    backgroundColor: '#f8f9fa', 
-    borderRadius: 10, 
-    margin: 8, 
-    alignItems: 'center', 
-    justifyContent: 'center',
-    flex: 1,
-    padding: 10, 
-    elevation: 2, 
-    borderWidth: 1, 
-    borderColor: '#eee' 
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 8,
-    backgroundColor: '#e0e0e0'
-  },
-  nome: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#333'
-  },
-  infoText: { 
-    textAlign: 'center', 
-    marginTop: 50, 
-    fontSize: 16, 
-    color: '#7f8c8d' 
-  },
-  fab: { 
-    position: 'absolute', 
-    width: 60, 
-    height: 60, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    right: 30, 
-    bottom: 30, 
-    backgroundColor: '#3498db', 
-    borderRadius: 30, 
-    elevation: 8 
-  },
-  loadMoreButton: {
-    padding: 15,
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    alignItems: 'center',
-    margin: 16,
-  },
-  loadMoreText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  }
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  grid: { padding: 8 },
+  card: { backgroundColor: '#f8f9fa', borderRadius: 10, margin: 8, alignItems: 'center', justifyContent: 'center', flex: 1, padding: 10, elevation: 2, borderWidth: 1, borderColor: '#eee' },
+  nome: { fontWeight: 'bold', fontSize: 16, textAlign: 'center', color: '#333' },
+  infoText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#7f8c8d' },
+  fab: { position: 'absolute', width: 60, height: 60, alignItems: 'center', justifyContent: 'center', right: 30, bottom: 30, backgroundColor: '#3498db', borderRadius: 30, elevation: 8 },
+  loadMoreButton: { padding: 15, backgroundColor: '#3498db', borderRadius: 8, alignItems: 'center', margin: 16 },
+  loadMoreText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
 });
 
 export default Inicio;

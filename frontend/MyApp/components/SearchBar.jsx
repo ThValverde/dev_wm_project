@@ -1,27 +1,40 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TextInput, View, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-function SearchBar() {
+/**
+ * Componente de Barra de Busca reutilizável.
+ * @param {object} props
+ * @param {function(string): void} props.onSearch - Função chamada sempre que o texto de busca muda.
+ * @param {string} props.placeholder - Texto a ser exibido no campo de busca.
+ */
+function SearchBar({ onSearch, placeholder = "Buscar..." }) {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearch = (text) => {
+  // Esta função agora atualiza o estado local e chama a função onSearch do componente pai.
+  const handleSearchChange = (text) => {
     setSearchQuery(text);
-    
+    if (onSearch) {
+      onSearch(text);
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.searchBar}>
+        <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Buscar..."
+          placeholder={placeholder}
           value={searchQuery}
-          onChangeText={handleSearch}
+          onChangeText={handleSearchChange}
           placeholderTextColor="#888"
         />
-        <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchIcon}>🔍</Text>
-        </TouchableOpacity>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => handleSearchChange('')}>
+            <Ionicons name="close-circle" size={20} color="#7f8c8d" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -29,39 +42,26 @@ function SearchBar() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 12,
-    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
     width: '100%',
   },
   searchBar: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f0f2f5',
     borderRadius: 12,
     alignItems: 'center',
-    width: '100%',
-    maxWidth: 400,
-    paddingHorizontal: 8,
-    elevation: 2,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    paddingHorizontal: 12,
+    height: 48,
     fontSize: 16,
-    color: '#222',
-    backgroundColor: 'transparent',
-  },
-  searchButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#2c3e50',
-    marginLeft: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    color: '#fff',
-    fontSize: 20,
+    color: '#333',
   },
 });
 
