@@ -165,11 +165,12 @@ CORS_ALLOWED_ORIGINS = [        # LOCAL
     # 'http://127.0.0.1:3000',
 ]
 
-# CORS_ALLOWED_ORIGINS = [            # DEPLOY
-#     # Adicione a URL do seu frontend em produção aqui
-#     # Exemplo: 'https://meu-frontend.onrender.com',
-#     'https://e-doso-backend.onrender.com',
-# ]
+CORS_ALLOWED_ORIGINS = [            # DEPLOY
+    # Adicione a URL do seu frontend em produção aqui
+    # Exemplo: 'https://meu-frontend.onrender.com',
+    # 'https://e-doso-backend.onrender.com',
+    'http://localhost:8081',
+]
 
 
 CORS_ALLOW_HEADERS = [

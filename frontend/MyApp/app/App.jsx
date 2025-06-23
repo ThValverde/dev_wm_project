@@ -209,7 +209,11 @@ function MainDrawerNavigator() {
 function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName="Login" screenOptions={{ 
+        headerShown: false,
+        headerBackTitle: 'Voltar', 
+        headerTintColor: '#000',
+        }}>
         {/* ... Telas de Login, Cadastro, SelecionarLar, CriarLar, Main, Dados, CadastroIdoso, EditarIdoso ... */}
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="Cadastro" component={Cadastro} />
