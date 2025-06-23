@@ -112,7 +112,6 @@ const GerenciarLar = () => {
               Alert.alert('Lar Deletado', 'O lar foi removido com sucesso.');
               navigation.navigate('SelecionarLar');
             } catch (error) {
-              // ### CORREÇÃO APLICADA AQUI ###
               // Log do erro completo para depuração
               console.error("Erro completo ao deletar o lar:", error.response || error);
 
