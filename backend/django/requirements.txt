@@ -55,6 +55,7 @@ djangorestframework-simplejwt==5.5.0
     # via -r requirements.in
 drf-nested-routers==0.94.2
     # via -r requirements.in
+gunicorn==23.0.0
 kombu==5.5.4
     # via celery
 packaging==25.0
