@@ -123,7 +123,7 @@ const handleDeleteLog = (logIdToDelete) => {
       // A própria função fetchLogs já desativa o 'carregando' em caso de sucesso
     };
 
-    // Lógica de confirmação (sem alterações)
+    // Lógica de confirmação 
     if (Platform.OS === 'web') {
         if(window.confirm("Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.")) {
             deleteAction();
