@@ -3,14 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// É importante usar o SafeAreaView desta biblioteca para melhor integração com a navegação
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Em um app real, você buscaria esses dados do estado global (Context/Redux) ou da API
-// Esta simulação ajuda a visualizar como o menu se comportaria com diferentes permissões
 const useUserData = () => {
-    const [isAdmin, setIsAdmin] = useState(true); // Mude para false para testar como membro
-    const [hasGroup, setHasGroup] = useState(true); // Mude para false para testar sem grupo
+    const [isAdmin, setIsAdmin] = useState(true); 
+    const [hasGroup, setHasGroup] = useState(true); 
 
     return { isAdmin, hasGroup };
 };
@@ -31,23 +28,22 @@ function CustomDrawerContent(props) {
       {/* 2. DrawerContentScrollView permite a rolagem dos itens do menu */}
       <DrawerContentScrollView 
         {...props}
-        contentContainerStyle={{ paddingTop: 0 }} // Removemos o padding, pois o cabeçalho cuidará disso
+        contentContainerStyle={{ paddingTop: 0 }} 
       >
       <View style={{
         height: 50,
         backgroundColor: 'transparent'
       }} />
-        {/* Cabeçalho personalizado */}
+        {/* Cabeçalho*/}
         <View style={styles.headerContainer}>
           <Ionicons name="medkit" size={40} color="#3498db" />
           <Text style={styles.appName}>MediCare</Text>
           <Text style={styles.version}>v1.0.2</Text>
         </View>
 
-        {/* DrawerItemList renderiza os itens que você definiu no App.jsx */}
+        {/* DrawerItemList renderiza os itens definidos no App.jsx */}
         <DrawerItemList {...props} />
 
-        {/* Adicionar outros itens customizados que não estão no App.jsx */}
         {/* Exemplo de item condicional para administradores */}
         {isAdmin && (
            <DrawerItem
@@ -73,7 +69,7 @@ function CustomDrawerContent(props) {
 }
 
 const styles = StyleSheet.create({
-    // Novo estilos para o cabeçalho
+
     headerContainer: {
         padding: 20,
         paddingTop: 50, 
@@ -95,7 +91,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#95a5a6'
     },
-    // Estilos existentes
+
     footer: {
         borderTopColor: '#e0e0e0',
         borderTopWidth: 1,
