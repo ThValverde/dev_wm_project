@@ -98,7 +98,7 @@ export default function Estoque({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Estoque de Medicamentos</Text>
-      {/* SearchBar agora atualiza o termo de busca instantâneo */}
+      {/* SearchBar atualiza o termo de busca instantâneo */}
       <SearchBar onSearch={setTermoBusca} placeholder="Buscar por nome do medicamento..." />
       <FlatList
         data={medicamentosFiltrados}
