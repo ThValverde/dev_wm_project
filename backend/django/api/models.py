@@ -155,6 +155,9 @@ class Idoso(models.Model):
     condicoes = models.TextField(verbose_name="Condições", blank=True, help_text="Condições especiais ou alergias") # Campo de texto para condições especiais e alergias
 
     class Meta:
+        verbose_name = "Idoso"
+        verbose_name_plural = "Idosos"
+        ordering = ['nome_completo']
         # Restrições para garantir que CPF, RG e Cartão SUS sejam únicos dentro de cada grupo
         constraints = [
             models.UniqueConstraint(fields=['grupo', 'cpf'], name='unique_cpf_por_grupo'),

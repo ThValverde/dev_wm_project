@@ -39,10 +39,10 @@ function Inicio({ navigation }) {
   };
   
   useFocusEffect(
-    useCallback(() => {
-      buscarIdosos();
-    }, [])
-  );
+  useCallback(() => {
+    buscarIdosos(); // Simplesmente chame a função de busca aqui.
+  }, [])
+);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
