@@ -91,7 +91,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #     }
 # }
 
-DATABASES = {
+DATABASES = {               # LOCAL
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600
@@ -178,20 +178,20 @@ CORS_ALLOW_METHODS = [
     'OPTIONS',
 ]
 
-# ALLOWED_HOSTS = [
-#     '127.0.0.1',
-#     'localhost',
-#     '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
-#     '192.168.0.201', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
-# ]
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
+    '192.168.0.201', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
+]
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = []
 
-RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+# if RENDER_EXTERNAL_HOSTNAME:
+#     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 REST_AUTH = {
     'LOGIN_SERIALIZER': 'api.serializers.CustomLoginSerializer',
