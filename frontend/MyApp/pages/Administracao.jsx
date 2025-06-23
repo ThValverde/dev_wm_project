@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-// Adicionamos a importação do MaskedTextInput que já está no projeto
 import { MaskedTextInput } from "react-native-mask-text";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -90,7 +89,6 @@ export default function Administracao({ route, navigation }) {
 
             <Text style={styles.label}>Data e Hora da Administração</Text>
             
-            {/* --- CORREÇÃO: LÓGICA CONDICIONAL PARA WEB VS MOBILE --- */}
             {Platform.OS === 'web' ? (
                 // Interface para Web com campos de texto separados
                 <View style={styles.dateContainerWeb}>
