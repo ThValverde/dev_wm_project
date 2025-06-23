@@ -1,7 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { 
+    View, 
+    Text, 
+    TextInput, 
+    TouchableOpacity, 
+    StyleSheet, 
+    ScrollView, 
+    Alert, 
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
@@ -17,8 +29,19 @@ export default function PerfilUsuario() {
     const [novaSenha1, setNovaSenha1] = useState('');
     const [novaSenha2, setNovaSenha2] = useState('');
     const [carregandoSenha, setCarregandoSenha] = useState(false);
+    
+    // Estado para controlar a visibilidade da senha
+    const [secureText, setSecureText] = useState({
+        antiga: true,
+        nova1: true,
+        nova2: true,
+    });
 
-    // Busca os dados do perfil do usuário sempre que a tela é focada
+    // Função para alternar a visibilidade da senha
+    const toggleSecureText = (field) => {
+        setSecureText(prevState => ({ ...prevState, [field]: !prevState[field] }));
+    };
+
     useFocusEffect(
         useCallback(() => {
             const fetchProfile = async () => {
@@ -40,7 +63,6 @@ export default function PerfilUsuario() {
         }, [])
     );
 
-    // Função para salvar as alterações do perfil (nome e e-mail)
     const handleUpdateProfile = async () => {
         if (!nome.trim() || !email.trim()) {
             Alert.alert("Erro", "Nome e e-mail não podem ficar em branco.");
@@ -59,7 +81,6 @@ export default function PerfilUsuario() {
         }
     };
 
-    // Função para alterar a senha
     const handleChangePassword = async () => {
         if (!senhaAntiga || !novaSenha1 || !novaSenha2) {
             Alert.alert("Erro", "Todos os campos de senha são obrigatórios.");
@@ -77,7 +98,6 @@ export default function PerfilUsuario() {
                 { headers: { 'Authorization': `Token ${token}` } }
             );
             Alert.alert("Sucesso", "Senha alterada com sucesso!");
-            // Limpa os campos após o sucesso
             setSenhaAntiga('');
             setNovaSenha1('');
             setNovaSenha2('');
@@ -90,48 +110,77 @@ export default function PerfilUsuario() {
     };
     
     if (carregandoPerfil) {
-        return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+        return <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} />;
     }
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.container}>
-                <View style={styles.card}>
-                    <Text style={styles.title}>Meus Dados</Text>
-                    <Text style={styles.label}>Nome Completo</Text>
-                    <TextInput style={styles.input} value={nome} onChangeText={setNome} />
-                    <Text style={styles.label}>E-mail</Text>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-                    <TouchableOpacity style={styles.button} onPress={handleUpdateProfile}>
-                        <Text style={styles.buttonText}>Salvar Alterações</Text>
-                    </TouchableOpacity>
-                </View>
+            <KeyboardAvoidingView 
+                style={{ flex: 1 }} 
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
+            >
+                <ScrollView 
+                    style={styles.container}
+                    contentContainerStyle={{ paddingBottom: 50 }}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.card}>
+                        <Text style={styles.title}>Meus Dados</Text>
+                        <Text style={styles.label}>Nome Completo</Text>
+                        <TextInput style={styles.input} value={nome} onChangeText={setNome} />
+                        <Text style={styles.label}>E-mail</Text>
+                        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+                        <TouchableOpacity style={styles.button} onPress={handleUpdateProfile}>
+                            <Text style={styles.buttonText}>Salvar Alterações</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                <View style={styles.card}>
-                    <Text style={styles.title}>Alterar Senha</Text>
-                    <Text style={styles.label}>Senha Antiga</Text>
-                    <TextInput style={styles.input} secureTextEntry value={senhaAntiga} onChangeText={setSenhaAntiga} />
-                    <Text style={styles.label}>Nova Senha</Text>
-                    <TextInput style={styles.input} secureTextEntry value={novaSenha1} onChangeText={setNovaSenha1} />
-                    <Text style={styles.label}>Confirmar Nova Senha</Text>
-                    <TextInput style={styles.input} secureTextEntry value={novaSenha2} onChangeText={setNovaSenha2} />
-                    <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleChangePassword} disabled={carregandoSenha}>
-                        {carregandoSenha ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Alterar Senha</Text>}
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                    <View style={styles.card}>
+                        <Text style={styles.title}>Alterar Senha</Text>
+                        
+                        <Text style={styles.label}>Senha Antiga</Text>
+                        <View style={styles.passwordContainer}>
+                            <TextInput style={styles.inputPassword} secureTextEntry={secureText.antiga} value={senhaAntiga} onChangeText={setSenhaAntiga} />
+                            <TouchableOpacity onPress={() => toggleSecureText('antiga')} style={styles.eyeIcon}>
+                                <Ionicons name={secureText.antiga ? "eye-off" : "eye"} size={24} color="grey" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.label}>Nova Senha</Text>
+                        <View style={styles.passwordContainer}>
+                            <TextInput style={styles.inputPassword} secureTextEntry={secureText.nova1} value={novaSenha1} onChangeText={setNovaSenha1} />
+                            <TouchableOpacity onPress={() => toggleSecureText('nova1')} style={styles.eyeIcon}>
+                                <Ionicons name={secureText.nova1 ? "eye-off" : "eye"} size={24} color="grey" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={styles.label}>Confirmar Nova Senha</Text>
+                        <View style={styles.passwordContainer}>
+                             <TextInput style={styles.inputPassword} secureTextEntry={secureText.nova2} value={novaSenha2} onChangeText={setNovaSenha2} />
+                            <TouchableOpacity onPress={() => toggleSecureText('nova2')} style={styles.eyeIcon}>
+                                <Ionicons name={secureText.nova2 ? "eye-off" : "eye"} size={24} color="grey" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity style={[styles.button, styles.buttonSecondary]} onPress={handleChangePassword} disabled={carregandoSenha}>
+                            {carregandoSenha ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Alterar Senha</Text>}
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f0f4f7' },
-    container: { flex: 1, padding: 16 },
+    container: { flex: 1, paddingHorizontal: 16 },
     card: {
         backgroundColor: '#fff',
         borderRadius: 12,
         padding: 20,
-        marginBottom: 20,
+        marginTop: 16,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -157,6 +206,23 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         borderWidth: 1,
         borderColor: '#e1e5e8',
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9fa',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e1e5e8',
+        marginBottom: 16,
+    },
+    inputPassword: {
+        flex: 1,
+        padding: 12,
+        fontSize: 16,
+    },
+    eyeIcon: {
+        padding: 10,
     },
     button: {
         backgroundColor: '#3498db',
