@@ -6,7 +6,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { MaskedText, MaskedTextInput } from "react-native-mask-text";
-// O DateTimePicker não é mais necessário aqui
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
@@ -26,13 +25,13 @@ export default function CadastroIdoso({ navigation }) {
   const [condicoes, setCondicoes] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // MUDANÇA: Estados separados para dia, mês e ano
+  //Estados separados para dia, mês e ano
   const [diaNascimento, setDiaNascimento] = useState('');
   const [mesNascimento, setMesNascimento] = useState('');
   const [anoNascimento, setAnoNascimento] = useState('');
 
   const handleCadastro = async () => {
-    // MUDANÇA: Lógica de validação e formatação da data
+    //Lógica de validação e formatação da data
     const dataFormatada = `${anoNascimento}-${mesNascimento}-${diaNascimento}`;
     const dataObj = new Date(dataFormatada + 'T12:00:00'); // Adiciona hora para evitar problemas de fuso horário
 
@@ -97,7 +96,7 @@ export default function CadastroIdoso({ navigation }) {
           <Text style={styles.sectionTitle}>Informações Pessoais</Text>
           <TextInput style={styles.input} placeholder="Nome Completo*" value={nomeCompleto} onChangeText={setNomeCompleto} />
           
-          {/* MUDANÇA: Inputs separados para Dia, Mês e Ano */}
+          {/*Inputs separados para Dia, Mês e Ano */}
           <Text style={styles.label}>Data de Nascimento*</Text>
           <View style={styles.dateContainer}>
             <TextInput
