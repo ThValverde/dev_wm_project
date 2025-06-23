@@ -83,7 +83,6 @@ export default function EditarIdoso({ route, navigation }) {
             });
             Alert.alert("Sucesso", "Idoso excluído do sistema.");
             
-            // CORREÇÃO: Navegar para a tela 'Main', que contém o Drawer e a tela 'Início'
             navigation.navigate('Main');
 
         } catch (error) {
