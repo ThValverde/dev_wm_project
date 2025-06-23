@@ -10,9 +10,7 @@
 
 O objetivo principal é facilitar o controle de medicamentos, horários, prescrições e dados vitais dos idosos, garantindo que os cuidadores tenham acesso rápido e preciso às informações necessárias para oferecer o melhor cuidado possível.
 
-O desenvolvimento do aplicativo compõe o trabalho final da disciplina SSC0961 - Desenvolvimento Web E Mobile
-da Universidade de São Paulo - Istituto de Ciências Matemáticas e de Computação - 1o semestre de 2025
-Professora Dra. Lina María Garcés Rodríguez.
+O desenvolvimento do aplicativo compõe o trabalho final da disciplina SSC0961 - Desenvolvimento Web E Mobile da Universidade de São Paulo - Instituto de Ciências Matemáticas e de Computação - 1º semestre de 2024. Professora Dra. Lina María Garcés Rodríguez.
 
 ---
 
@@ -55,8 +53,7 @@ O projeto é dividido em duas partes principais: um **Frontend** (aplicativo mó
 
 #### Backend
 - **Python**
-- **Django**
-- **Django REST Framework**
+- **Django** & **Django REST Framework**
 - **dj-rest-auth** para autenticação
 - **dj-database-url** para configuração de banco de dados
 - **WhiteNoise** para servir arquivos estáticos
@@ -78,11 +75,16 @@ Para executar este projeto, você precisará configurar e iniciar o Backend (ser
 - **Node.js** (versão LTS recomendada)
 - **Python 3.x**
 - **Gerenciador de pacotes NPM** ou **Yarn**
-- **Expo Go** no seu celular (opcional, para testes mobile)
+- **Expo Go** no seu celular (para testes mobile)
 
-### 1. Configurando o Backend (Django) - local
+### 1. Clone o Repositório
 
-Clone o repositório
+```bash
+git clone https://github.com/ThValverde/dev_wm_project.git
+cd dev_wm_project
+```
+
+### 2. Configurando o Backend (Django)
 
 Navegue até a pasta do backend e configure o ambiente virtual.
 
@@ -92,16 +94,34 @@ cd backend/django
 
 # Crie e ative um ambiente virtual
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # No Windows, use `venv\Scripts\activate`
 
 # Instale as dependências
 pip install -r requirements.txt
 
-# Limpe o banco de dados antigo (se houver) e crie as migrações
-rm -rf db.sqlite3
-rm -rf api/migrations
-python3 manage.py makemigrations api
+# Aplique as migrações do banco de dados
 python3 manage.py migrate
 
 # Inicie o servidor Django
 python3 manage.py runserver 0.0.0.0:8000
+```
+O backend estará rodando em `http://<seu-ip-local>:8000`.
+
+### 3. Configurando o Frontend (Expo)
+
+Abra um **novo terminal**, navegue até a pasta do frontend e instale as dependências.
+
+```bash
+# Navegue para a pasta do frontend (a partir da raiz do projeto)
+cd frontend/MyApp
+
+# Instale as dependências
+npm install
+
+# Inicie o servidor de desenvolvimento do Expo
+npx expo start
+```
+Isso abrirá o Metro Bundler no seu navegador. Você pode usar o aplicativo **Expo Go** no seu celular para escanear o QR Code e executar o aplicativo.
+
+**Importante:** O aplicativo frontend precisa saber o endereço do backend. Para conectar ao seu servidor local, você precisará alterar a URL da API no código-fonte do frontend para o IP da sua máquina onde o backend está rodando (ex: `http://192.168.1.10:8000`). Uma versão online do backend está disponível em `https://e-doso-backend.onrender.com` e pode ser usada para testes.
+Para simplificar o processo, é possível clonar diretamente https://github.com/ThValverde/dev_wm_project/local.git
