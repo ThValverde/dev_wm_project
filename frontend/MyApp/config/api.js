@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 // // IP da sua máquina na rede local.
 // // Este IP deve ser usado para o acesso via celular/emulador.
- const DEV_MOBILE_URL = 'http://192.168.0.201:8000';
+ const DEV_MOBILE_URL = 'http://192.168.0.14:8000';
 
 // // No navegador, podemos usar 'localhost' ou o IP. 'localhost' é mais comum e estável.
  const DEV_WEB_URL = 'http://localhost:8000';

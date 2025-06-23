@@ -10,14 +10,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import baseURL from '../config/api';
-import Dados from '../pages/Dados';
-
 
 export default function EditarIdoso({ route, navigation }) {
   const { idoso } = route.params;
 
   const [nomeCompleto, setNomeCompleto] = useState(idoso.nome_completo);
-  const [dataNascimento, setDataNascimento] = useState(new Date(idoso.data_nascimento));
+  const [dataNascimento, setDataNascimento] = useState(new Date(idoso.data_nascimento + 'T12:00:00'));
   const [peso, setPeso] = useState(idoso.peso.toString());
   const [genero, setGenero] = useState(idoso.genero);
   const [cpf, setCpf] = useState(idoso.cpf);
@@ -32,13 +30,12 @@ export default function EditarIdoso({ route, navigation }) {
   const [carregando, setCarregando] = useState(false);
 
   const onDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS !== 'web' ? false : true);
+    setShowDatePicker(false);
     if (selectedDate) {
       setDataNascimento(selectedDate);
     }
   };
 
-  // ### ATUALIZAÇÃO NESTA FUNÇÃO ###
   const handleSalvar = async () => {
     if (!nomeCompleto.trim() || !cpf.trim() || !cartaoSus.trim()) {
       Alert.alert('Erro', 'Nome, CPF e Cartão SUS são obrigatórios.');
@@ -60,24 +57,54 @@ export default function EditarIdoso({ route, navigation }) {
         doencas: doencas, condicoes: condicoes,
       };
 
-      // 1. A requisição PATCH retorna os dados atualizados do idoso
-      const response = await axios.patch(`${baseURL}/api/grupos/${groupId}/idosos/${idoso.id}/`, payload, {
+      await axios.patch(`${baseURL}/api/grupos/${groupId}/idosos/${idoso.id}/`, payload, {
         headers: { 'Authorization': `Token ${token}` }
       });
 
-      // 2. Capturamos os dados atualizados da resposta
-      const idosoAtualizado = response.data;
-
       Alert.alert('Sucesso', 'Dados do idoso atualizados!');
-
-      // 3. Navegamos para a tela 'Dados', substituindo a antiga e passando os novos dados
-      navigation.goBack();
+      navigation.navigate('Dados', { idosoId: idoso.id });
 
     } catch (error) {
       console.error("Erro ao atualizar idoso:", error.response?.data || error.message);
       Alert.alert('Erro', 'Não foi possível atualizar os dados. Verifique as informações.');
     } finally {
       setCarregando(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const deleteAction = async () => {
+        setCarregando(true);
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const groupId = await AsyncStorage.getItem('selectedGroupId');
+            await axios.delete(`${baseURL}/api/grupos/${groupId}/idosos/${idoso.id}/`, {
+                headers: { 'Authorization': `Token ${token}` }
+            });
+            Alert.alert("Sucesso", "Idoso excluído do sistema.");
+            
+            // CORREÇÃO: Navegar para a tela 'Main', que contém o Drawer e a tela 'Início'
+            navigation.navigate('Main');
+
+        } catch (error) {
+            Alert.alert("Erro", "Não foi possível excluir o idoso.");
+            setCarregando(false);
+        }
+    };
+
+    if (Platform.OS === 'web') {
+        if(window.confirm("Tem certeza que deseja excluir este idoso? Esta ação é permanente e removerá também todas as suas prescrições.")) {
+            deleteAction();
+        }
+    } else {
+        Alert.alert(
+            "Excluir Idoso", 
+            "Tem certeza que deseja excluir este idoso? Esta ação é permanente e removerá também todas as suas prescrições.", 
+            [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Excluir", style: "destructive", onPress: deleteAction }
+            ]
+        );
     }
   };
 
@@ -96,20 +123,29 @@ export default function EditarIdoso({ route, navigation }) {
           
           <Text style={styles.label}>Data de Nascimento*</Text>
           
-          {Platform.OS !== 'web' && (
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInputButton}>
-              <Text style={styles.dateInputText}>{dataNascimento.toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</Text>
-            </TouchableOpacity>
-          )}
-
-          {(showDatePicker || Platform.OS === 'web') && (
+          {Platform.OS !== 'web' ? (
+            <>
+              <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateInputButton}>
+                <Text style={styles.dateInputText}>{dataNascimento.toLocaleDateString('pt-BR')}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={dataNascimento}
+                  mode={'date'}
+                  display="default"
+                  onChange={onDateChange}
+                  maximumDate={new Date()}
+                />
+              )}
+            </>
+          ) : (
             <DateTimePicker
               value={dataNascimento}
               mode={'date'}
               display="default"
               onChange={onDateChange}
               maximumDate={new Date()}
-              style={Platform.OS === 'web' ? styles.datePickerWeb : {}}
+              style={styles.datePickerWeb}
             />
           )}
 
@@ -141,6 +177,11 @@ export default function EditarIdoso({ route, navigation }) {
           <TouchableOpacity onPress={handleSalvar} style={[styles.button, carregando && styles.buttonDisabled]} disabled={carregando}>
             {carregando ? <ActivityIndicator color="#fff"/> : <Text style={styles.buttonText}>Salvar Alterações</Text>}
           </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleDelete} style={[styles.button, styles.deleteButton, carregando && styles.buttonDisabled]} disabled={carregando}>
+            <Text style={styles.buttonText}>Excluir Idoso</Text>
+          </TouchableOpacity>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -154,19 +195,24 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   scrollContainer: { padding: 20 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginTop: 20, marginBottom: 15 },
-  label: { fontSize: 16, color: '#34495e', marginBottom: 8 },
+  label: { fontSize: 16, color: '#34495e', marginBottom: 8, fontWeight: '600' },
   input: { backgroundColor: '#fff', borderRadius: 10, padding: 15, fontSize: 16, marginBottom: 12, borderWidth: 1, borderColor: '#e1e5e8' },
   dateInputButton: { backgroundColor: '#fff', borderRadius: 10, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#e1e5e8', justifyContent: 'center', height: 52 },
   dateInputText: { fontSize: 16, color: '#333' },
-  datePickerWeb: { height: 52, marginBottom: 12, width: '100%' },
+  datePickerWeb: { height: 52, marginBottom: 12, width: '100%', justifyContent: 'center' },
   inputMulti: { minHeight: 80, textAlignVertical: 'top', paddingVertical: 15 },
   genderContainer: { flexDirection: 'row', marginBottom: 12, gap: 8 },
   genderButton: { flex: 1, padding: 15, borderRadius: 10, alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e1e5e8' },
   genderActive: { backgroundColor: '#3498db', borderColor: '#3498db' },
   genderText: { fontSize: 16, color: '#34495e' },
   genderTextActive: { color: '#fff' },
-  switchContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  switchContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, backgroundColor: '#fff', borderRadius: 10, padding: 15, borderWidth: 1, borderColor: '#e1e5e8' },
   button: { backgroundColor: '#f39c12', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 20 },
   buttonDisabled: { backgroundColor: '#bdc3c7' },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+    marginTop: 10,
+    marginBottom: 40,
+  },
 });

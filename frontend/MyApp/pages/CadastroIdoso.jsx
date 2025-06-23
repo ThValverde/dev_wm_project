@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { MaskedTextInput } from "react-native-mask-text";
+import { MaskedText, MaskedTextInput } from "react-native-mask-text";
 // O DateTimePicker não é mais necessário aqui
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -138,7 +138,8 @@ export default function CadastroIdoso({ navigation }) {
           <Text style={styles.sectionTitle}>Documentos</Text>
           <MaskedTextInput style={styles.input} mask="999.999.999-99" placeholder="CPF*" keyboardType="numeric" onChangeText={(formatted, extracted) => setCpf(extracted)} />
           <MaskedTextInput style={styles.input} mask="99.999.999-9" placeholder="RG" keyboardType="numeric" onChangeText={(formatted, extracted) => setRg(extracted)} />
-          <TextInput style={styles.input} placeholder="Cartão SUS*" value={cartaoSus} onChangeText={setCartaoSus} keyboardType="numeric" />
+          <MaskedTextInput style={styles.input} mask="999 999 999 999" placeholder="Cartão SUS*" keyboardType="numeric" onChangeText={(formatted, extracted) => setCartaoSus(extracted)} />
+          {/* <TextInput style={styles.input} placeholder="Cartão SUS*" value={cartaoSus} onChangeText={setCartaoSus} keyboardType="numeric" /> */}
           
           <Text style={styles.sectionTitle}>Saúde</Text>
           <View style={styles.switchContainer}><Text style={styles.label}>Possui Plano de Saúde?</Text><Switch value={possuiPlano} onValueChange={setPossuiPlano} /></View>

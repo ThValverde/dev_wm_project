@@ -158,7 +158,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     'http://10.0.2.2:8000',      # For Android emulator access to host's localhost
-    'http://192.168.0.201:8000', # For local network access if server runs on this IP/port
+    'http://192.168.0.14:8000', # For local network access if server runs on this IP/port
     'http://localhost:8081',  # For React Native Metro bundler
     # If your frontend runs on a different port (e.g., React, Vue, Angular dev server), add its origin here:
     # 'http://localhost:3000',
@@ -182,7 +182,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
-    '192.168.0.201', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
+    '192.168.0.14', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
 ]
 
 # ALLOWED_HOSTS = []

@@ -195,8 +195,8 @@ function MainDrawerNavigator() {
         headerTitleStyle: { fontWeight: 'bold' },
       }}
     >
-      <Drawer.Screen name="Meu Perfil" component={PerfilUsuario} />
       <Drawer.Screen name="Início" component={Inicio} />
+      <Drawer.Screen name="Meu Perfil" component={PerfilUsuario} />
       <Drawer.Screen name="Estoque" component={Estoque} />
       <Drawer.Screen name="Horários" component={Horario} />
        <Drawer.Screen name="Log de Administrações" component={LogAdministracoes} />
