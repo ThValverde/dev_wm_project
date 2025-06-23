@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import baseURL from '../config/api';
 
-// --- Importação das suas telas (pages) ---
+// --- Importação das telas (pages) ---
 import Login from '../pages/Login';
 import Cadastro from '../pages/Cadastro';
 import Inicio from '../pages/Inicio';
@@ -112,8 +112,7 @@ function CustomDrawerContent(props) {
     <View style={{ flex: 1 }}>
       <DrawerItemList {...props} />
 
-      {/* ### CORREÇÃO APLICADA AQUI ### */}
-      {/* Botões de gerenciamento visíveis apenas para administradores */}
+
       {isUserAdmin && (
         <>
           <TouchableOpacity
@@ -222,7 +221,7 @@ function App() {
             headerTintColor: '#fff'
           }}
         />
-        {/* Adicionando as novas telas de medicamento à pilha de navegação */}
+        {/* Adiciona as novas telas de medicamento à pilha de navegação */}
         <Stack.Screen
           name="DadosMedicamento"
           component={DadosMedicamento}
