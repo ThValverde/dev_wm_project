@@ -1,0 +1,107 @@
+# E-Doso - Sistema de Gerenciamento para Lares de Idosos
+
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=green)
+![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
+
+## 📖 Sobre o Projeto
+
+**E-doso** é uma solução completa (Full Stack) projetada para otimizar a gestão de cuidados em lares e casas de repouso para idosos. O sistema é composto por um aplicativo móvel para cuidadores e um backend robusto para gerenciar todas as informações de forma segura e centralizada.
+
+O objetivo principal é facilitar o controle de medicamentos, horários, prescrições e dados vitais dos idosos, garantindo que os cuidadores tenham acesso rápido e preciso às informações necessárias para oferecer o melhor cuidado possível.
+
+O desenvolvimento do aplicativo compõe o trabalho final da disciplina SSC0961 - Desenvolvimento Web E Mobile
+da Universidade de São Paulo - Istituto de Ciências Matemáticas e de Computação - 1o semestre de 2025
+Professora Dra. Lina María Garcés Rodríguez.
+
+---
+
+## ✨ Funcionalidades Principais
+
+O projeto é dividido em duas partes principais: um **Frontend** (aplicativo móvel) e um **Backend** (API REST).
+
+### Frontend (React Native com Expo)
+- **Autenticação de Usuários:** Telas de Login e Cadastro seguras.
+- **Gerenciamento de Lares (Grupos):**
+    - Permite que um usuário crie um novo "Lar" (grupo de cuidadores).
+    - Permite que outros usuários entrem em um lar existente através de um código de acesso único.
+    - O administrador do lar pode gerenciar membros (adicionar/remover).
+- **Cadastro e Gestão de Idosos:**
+    - Formulário completo para registrar informações pessoais, documentos e condições de saúde de cada idoso.
+    - Visualização detalhada do perfil de cada idoso.
+- **Controle de Estoque de Medicamentos:**
+    - Cadastro de novos medicamentos com detalhes como nome, princípio ativo, concentração e quantidade.
+    - Listagem e busca de medicamentos em estoque.
+- **Gerenciamento de Prescrições:**
+    - Associação de medicamentos a idosos, com definição de horários, dosagens e frequência.
+- **Agenda de Horários:**
+    - Exibição diária dos medicamentos a serem administrados, organizada por horário.
+- **Log de Administração:**
+    - Registro de cada dose administrada, recusada ou pulada, incluindo quem foi o responsável e observações.
+
+### Backend (Django REST Framework)
+- **API RESTful:** Endpoints seguros para todas as operações do frontend.
+- **Autenticação por Token:** Garante que apenas usuários autenticados acessem os dados.
+- **Modelagem de Dados Completa:**
+    - `Usuario`: Modelo de usuário customizado.
+    - `Grupo`: Representa um lar, com admin e membros.
+    - `Idoso`, `Medicamento`, `Prescricao` e `LogAdministracao`: Modelos centrais do negócio.
+- **Permissões Granulares:** Sistema de permissão que diferencia administradores de membros comuns do grupo.
+- **URLs Aninhadas (Nested Routers):** Estrutura de rotas lógicas, como `/api/grupos/{id_grupo}/idosos/`.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+#### Backend
+- **Python**
+- **Django**
+- **Django REST Framework**
+- **dj-rest-auth** para autenticação
+- **dj-database-url** para configuração de banco de dados
+- **WhiteNoise** para servir arquivos estáticos
+
+#### Frontend
+- **JavaScript (React Native)**
+- **Expo** (SDK)
+- **React Navigation** para navegação entre telas
+- **Axios** para requisições HTTP
+- **AsyncStorage** para armazenamento local no dispositivo
+
+---
+
+## 🚀 Como Executar o Projeto
+
+Para executar este projeto, você precisará configurar e iniciar o Backend (servidor Django) e o Frontend (aplicativo Expo) separadamente.
+
+### Pré-requisitos
+- **Node.js** (versão LTS recomendada)
+- **Python 3.x**
+- **Gerenciador de pacotes NPM** ou **Yarn**
+- **Expo Go** no seu celular (opcional, para testes mobile)
+
+### 1. Configurando o Backend (Django) - local
+
+Clone o repositório
+
+Navegue até a pasta do backend e configure o ambiente virtual.
+
+```bash
+# Navegue para a pasta do backend
+cd backend/django
+
+# Crie e ative um ambiente virtual
+python3 -m venv venv
+source venv/bin/activate
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Limpe o banco de dados antigo (se houver) e crie as migrações
+rm -rf db.sqlite3
+rm -rf api/migrations
+python3 manage.py makemigrations api
+python3 manage.py migrate
+
+# Inicie o servidor Django
+python3 manage.py runserver 0.0.0.0:8000
