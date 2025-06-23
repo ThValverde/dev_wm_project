@@ -99,7 +99,7 @@ export default function CadastroMedicamento({ navigation }) {
         </ScrollView>
     );
 }
-//... Estilos
+
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: '#f0f4f7' },
   title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#2c3e50' },
