@@ -43,12 +43,12 @@ function Login({ navigation }) {
 
       await AsyncStorage.setItem('authToken', token);
       
-      // NOVO: Após salvar o token, buscar e salvar os dados do perfil do usuário
+      // Após salvar o token, buscar e salvar os dados do perfil do usuário
       const profileResponse = await axios.get(`${baseURL}/api/auth/profile/`, {
         headers: { 'Authorization': `Token ${token}` }
       });
 
-      // Salvamos o perfil do usuário como uma string JSON no AsyncStorage
+      // Salva o perfil do usuário como uma string JSON no AsyncStorage
       await AsyncStorage.setItem('userData', JSON.stringify(profileResponse.data));
 
       navigation.navigate('SelecionarLar');
@@ -61,7 +61,7 @@ function Login({ navigation }) {
                 errorMessage = nonFieldErrors[0];
             }
         }
-        // AQUI ESTÁ A MUDANÇA PRINCIPAL:
+        
         setErroLogin(errorMessage); // Define a mensagem de erro no estado
         console.error("Erro no login:", errorMessage);
     } finally {
