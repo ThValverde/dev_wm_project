@@ -48,7 +48,7 @@ export default function DadosMedicamento({ route, navigation }) {
       }
     };
 
-    // CORREÇÃO: Lógica de alerta diferente para web e mobile
+    //Lógica de alerta diferente para web e mobile
     if (Platform.OS === 'web') {
       if (window.confirm("Tem certeza que deseja excluir este medicamento? Esta ação não pode ser desfeita.")) {
         await deleteAction();
