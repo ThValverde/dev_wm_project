@@ -214,7 +214,13 @@ function App() {
         <Stack.Screen name="Cadastro" component={Cadastro} />
         <Stack.Screen name="SelecionarLar" component={SelecionarLar} />
         <Stack.Screen name="CriarLar" component={CriarLar} />
-        <Stack.Screen name="Main" component={MainDrawerNavigator} />
+        <Stack.Screen name="Main">
+          {(props) => (
+            <SafeAreaView style={{ flex: 1 }}>
+              <MainDrawerNavigator {...props} />
+            </SafeAreaView>
+          )}
+          </Stack.Screen>
         <Stack.Screen name="Dados" component={Dados} options={{ headerShown: true, title: 'Perfil do Idoso' }}/>
         <Stack.Screen name="CadastroIdoso" component={CadastroIdoso} options={{ headerShown: false }} />
         <Stack.Screen name="EditarIdoso" component={EditarIdoso} options={{ headerShown: false }} />

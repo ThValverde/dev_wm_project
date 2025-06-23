@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import SearchBar from '../components/SearchBar';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,22 +55,22 @@ function Inicio({ navigation }) {
   
   if (carregando) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <View style={styles.centered}>
         <ActivityIndicator size="large" color="#2c3e50" />
-      </SafeAreaView>
+      </View>
     );
   }
   
   if (erro) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <View style={styles.centered}>
         <Text style={styles.infoText}>{erro}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
   
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <SearchBar />
       <FlatList
         data={idosos}
@@ -83,14 +83,15 @@ function Inicio({ navigation }) {
       <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CadastroIdoso')}>
         <Ionicons name="add" size={30} color="#fff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#fff' 
+    backgroundColor: '#f0f4f7', // SUGESTÃO: Um cinza bem claro para um contraste suave
+    padding: 16,               // ADIÇÃO: Espaçamento interno para descolar do cabeçalho
   },
   centered: {
     flex: 1,

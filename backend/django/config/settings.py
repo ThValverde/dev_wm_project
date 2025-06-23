@@ -141,7 +141,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication', 
-        'rest_framework_simplejwt.authentication.JWTAuthentication', #ver se ta ok
+        #'rest_framework_simplejwt.authentication.JWTAuthentication', #ver se ta ok
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,  # Define o número padrão de itens por página

@@ -12,7 +12,6 @@ export default function Estoque({ navigation }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
 
-  // useFocusEffect garante que a lista seja recarregada ao entrar na tela
   useFocusEffect(
     useCallback(() => {
       const fetchMedicamentos = async () => {
@@ -26,7 +25,6 @@ export default function Estoque({ navigation }) {
             headers: { 'Authorization': `Token ${token}` }
           });
           
-          // Como este endpoint não é paginado, a resposta já é a lista completa
           setMedicamentos(response.data);
           setErro(null);
 

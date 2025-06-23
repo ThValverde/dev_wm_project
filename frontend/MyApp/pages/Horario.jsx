@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
@@ -15,13 +14,14 @@ function Horario({ navigation }) {
   const [diaAtual, setDiaAtual] = useState(hoje.getDay());
   const [prescricoes, setPrescricoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
 
-  // Busca todas as prescrições do grupo sempre que a tela for focada
   useFocusEffect(
     useCallback(() => {
       const fetchPrescricoes = async () => {
+        setCarregando(true);
+        setErro(null);
         try {
-          setCarregando(true);
           const token = await AsyncStorage.getItem('authToken');
           const groupId = await AsyncStorage.getItem('selectedGroupId');
           if (!token || !groupId) throw new Error("Sessão inválida");
@@ -31,7 +31,8 @@ function Horario({ navigation }) {
           });
           setPrescricoes(response.data);
         } catch (error) {
-          Alert.alert("Erro", "Não foi possível carregar a agenda de horários.");
+          console.error("Erro ao carregar horários:", error.response ? error.response.data : error.message);
+          setErro("Não foi possível carregar a agenda de horários.");
         } finally {
           setCarregando(false);
         }
@@ -40,7 +41,6 @@ function Horario({ navigation }) {
     }, [])
   );
 
-  // Filtra as prescrições para o dia da semana selecionado
   const prescricoesDoDia = prescricoes.filter(p => p[DIAS_API[diaAtual]])
                                      .sort((a, b) => a.horario_previsto.localeCompare(b.horario_previsto));
 
@@ -49,13 +49,11 @@ function Horario({ navigation }) {
     setDiaAtual(novoDia);
   };
   
-  // Função para administrar o medicamento com a hora atual
   const handleAdministrarAgora = (prescricao) => {
     const administrar = async () => {
       try {
         const token = await AsyncStorage.getItem('authToken');
         const groupId = await AsyncStorage.getItem('selectedGroupId');
-        // Requisição POST sem corpo para usar a hora atual no backend
         await axios.post(`${baseURL}/api/grupos/${groupId}/prescricoes/${prescricao.id}/administrar/`, {}, {
           headers: { 'Authorization': `Token ${token}` }
         });
@@ -72,6 +70,51 @@ function Horario({ navigation }) {
     );
   };
 
+  const renderContent = () => {
+    if (carregando) {
+      return <ActivityIndicator color="#fff" size="large" style={{ marginTop: 50 }} />;
+    }
+
+    if (erro) {
+        return (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="cloud-offline-outline" size={48} color="#ccc" />
+            <Text style={styles.errorText}>{erro}</Text>
+          </View>
+        );
+    }
+    
+    if (prescricoesDoDia.length === 0) {
+        return (
+            <View style={styles.emptyContainer}>
+                <Ionicons name="checkmark-done-circle-outline" size={48} color="#ccc" />
+                <Text style={styles.emptyText}>Não há medicamentos agendados para este dia.</Text>
+            </View>
+        );
+    }
+
+    return (
+        prescricoesDoDia.map((p) => (
+            <View key={p.id} style={styles.medicationCard}>
+              <View style={styles.timeContainer}><Text style={styles.time}>{p.horario_previsto.substring(0, 5)}</Text></View>
+              <View style={styles.medicationInfo}>
+                <Text style={styles.medicationName}>{p.medicamento.nome_marca}</Text>
+                <Text style={styles.patientName}>Para: {p.idoso}</Text>
+                <Text style={styles.quantity}>{p.dosagem}</Text>
+              </View>
+              <View style={styles.actionsContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('Administracao', { prescricao: p })} style={styles.actionButton}>
+                  <Ionicons name="document-text-outline" size={24} color="#7f8c8d" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleAdministrarAgora(p)} style={[styles.actionButton, styles.playButton]}>
+                  <Ionicons name="play" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -82,32 +125,9 @@ function Horario({ navigation }) {
           <TouchableOpacity onPress={() => mudarDia(1)} style={styles.dateButton}><Ionicons name="chevron-forward" size={24} color="white" /></TouchableOpacity>
         </View>
 
-        {carregando ? <ActivityIndicator color="#fff" size="large" /> : (
-          <ScrollView style={styles.scrollView}>
-            {prescricoesDoDia.length > 0 ? (
-              prescricoesDoDia.map((p) => (
-                <View key={p.id} style={styles.medicationCard}>
-                  <View style={styles.timeContainer}><Text style={styles.time}>{p.horario_previsto.substring(0, 5)}</Text></View>
-                  <View style={styles.medicationInfo}>
-                    <Text style={styles.medicationName}>{p.medicamento.nome_marca}</Text>
-                    <Text style={styles.patientName}>Para: {p.idoso}</Text>
-                    <Text style={styles.quantity}>{p.dosagem}</Text>
-                  </View>
-                  <View style={styles.actionsContainer}>
-                    <TouchableOpacity onPress={() => navigation.navigate('Administracao', { prescricao: p })} style={styles.actionButton}>
-                      <Ionicons name="document-text-outline" size={24} color="#7f8c8d" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleAdministrarAgora(p)} style={[styles.actionButton, styles.playButton]}>
-                      <Ionicons name="play" size={24} color="#fff" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyContainer}><Text style={styles.emptyText}>Não há medicamentos agendados para este dia.</Text></View>
-            )}
-          </ScrollView>
-        )}
+        <ScrollView style={styles.scrollView}>
+            {renderContent()}
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -122,7 +142,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#2c3e50',
   },
   title: {
     color: '#fff',
@@ -142,8 +161,6 @@ const styles = StyleSheet.create({
   },
   dateButton: {
     padding: 8,
-    borderRadius: 5,
-    backgroundColor: '#2c3e50',
   },
   dateText: {
     color: 'white',
@@ -158,10 +175,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 3,
     overflow: 'hidden',
   },
@@ -174,7 +187,7 @@ const styles = StyleSheet.create({
   },
   time: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   medicationInfo: {
@@ -185,46 +198,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 4,
+  },
+  patientName: {
+    fontSize: 14,
+    color: '#34495e',
+    marginTop: 4,
   },
   quantity: {
     fontSize: 14,
     color: '#7f8c8d',
-    marginBottom: 8,
-  },
-  patientButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
     marginTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
   },
-  patientName: {
-    fontSize: 14,
-    color: '#2c3e50',
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
-  patientDetails: {
-    marginTop: 8,
+  actionButton: {
     padding: 8,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
   },
-  patientDetail: {
-    fontSize: 14,
-    color: '#2c3e50',
-    marginBottom: 4,
+  playButton: {
+    backgroundColor: '#27ae60',
+    borderRadius: 20,
+    padding: 10,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 40,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginTop: 50,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 10,
   },
   emptyText: {
     color: '#ccc',
+    fontSize: 16,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorText: {
+    color: '#ffdddd',
     fontSize: 16,
     marginTop: 16,
     textAlign: 'center',
