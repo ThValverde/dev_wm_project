@@ -59,7 +59,6 @@ export default function CriarLar({ navigation }) {
         headers: { 'Authorization': `Token ${token}` }
       });
       
-      // CORREÇÃO: Navegação ocorre ANTES do alerta.
       navigation.goBack();
       Alert.alert(
         'Sucesso!',
@@ -90,7 +89,6 @@ export default function CriarLar({ navigation }) {
         headers: { 'Authorization': `Token ${token}` }
       });
 
-      // CORREÇÃO: Navegação ocorre ANTES do alerta.
       navigation.goBack();
       Alert.alert(
         'Sucesso!',
