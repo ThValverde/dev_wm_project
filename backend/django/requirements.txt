@@ -61,6 +61,7 @@ packaging==25.0
     # via kombu
 prompt-toolkit==3.0.51
     # via click-repl
+psycopg2-binary==2.9.10
 pyjwt==2.9.0
     # via djangorestframework-simplejwt
 python-dateutil==2.9.0.post0
