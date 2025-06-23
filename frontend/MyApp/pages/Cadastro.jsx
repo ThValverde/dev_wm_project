@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  Alert, KeyboardAvoidingView, Platform, ScrollView 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView,
+  ActivityIndicator // Adicionado para o feedback de carregamento
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,46 +25,37 @@ function Cadastro({ navigation }) {
   const [erroCadastro, setErroCadastro] = useState('');
 
   const handleCadastro = async () => {
-    setErroCadastro(''); // Limpa erros antigos ao tentar de novo
+    setErroCadastro('');
 
     if (!nome.trim() || !email.trim() || !senha.trim()) {
-      setErroCadastro('Por favor, preencha todos os campos.'); // Define o erro no estado
+      setErroCadastro('Por favor, preencha todos os campos.');
       return;
     }
 
     setCarregando(true);
 
     try {
-      // Endpoint de cadastro - ajuste se for diferente no backend
       await axios.post(`${baseURL}/api/auth/register/`, {
-        nome_completo: nome, // ou 'name', 'full_name', etc., dependendo da sua API
+        nome_completo: nome,
         email: email,
         password: senha,
       });
 
       Alert.alert('Sucesso', 'Cadastro realizado! Você já pode fazer o login.');
-      navigation.navigate('Login'); // Redireciona para a tela de login
+      navigation.navigate('Login');
 
     } catch (error) {
         let erroMsg = 'Não foi possível realizar o cadastro. Tente novamente.';
-
-        // Verifica se o erro veio da API e tem dados
         if (error.response && error.response.data) {
           const data = error.response.data;
-          console.error("Erro no cadastro:", data); // Log para depuração
-
-          // Tenta pegar o erro de senha primeiro
+          console.error("Erro no cadastro:", data);
           if (data.password && data.password.length > 0) {
-            erroMsg = data.password[0]; // Ex: "Esta senha é muito curta."
-
-          // Depois o erro de email duplicado
+            erroMsg = data.password[0];
           } else if (data.email && data.email.length > 0) {
-            erroMsg = data.email[0]; // Ex: "usuario com este e-mail já existe."
+            erroMsg = data.email[0];
           }
         }
-
         setErroCadastro(erroMsg);
-
     } finally {
       setCarregando(false);
     }
@@ -64,11 +63,16 @@ function Cadastro({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* O KeyboardAvoidingView envolve todo o conteúdo que pode ser afetado pelo teclado */}
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled" // Ajuda a manter o foco e cliques
+        >
           <View style={styles.formContainer}>
             <Text style={styles.titleText}>Criar Conta</Text>
 
@@ -125,9 +129,7 @@ function Cadastro({ navigation }) {
               onPress={handleCadastro}
               disabled={carregando}
             >
-              <Text style={styles.actionButtonText}>
-                {carregando ? 'Cadastrando...' : 'Cadastrar'}
-              </Text>
+              {carregando ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionButtonText}>Cadastrar</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate('Login')}>
@@ -140,12 +142,10 @@ function Cadastro({ navigation }) {
   );
 }
 
-// Estilos (semelhantes aos de Login.jsx para consistência)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#2c3e50',
-    justifyContent: 'center',
   },
   scrollContainer: {
     flexGrow: 1,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   actionButton: {
-    backgroundColor: '#27ae60', // Cor verde para cadastro
+    backgroundColor: '#27ae60',
     borderRadius: 12,
     height: 50,
     justifyContent: 'center',
@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  
   errorText: {
     color: '#e74c3c',
     textAlign: 'center',
