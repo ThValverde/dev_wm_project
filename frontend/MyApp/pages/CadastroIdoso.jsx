@@ -138,7 +138,6 @@ export default function CadastroIdoso({ navigation }) {
           <MaskedTextInput style={styles.input} mask="999.999.999-99" placeholder="CPF*" keyboardType="numeric" onChangeText={(formatted, extracted) => setCpf(extracted)} />
           <MaskedTextInput style={styles.input} mask="99.999.999-9" placeholder="RG" keyboardType="numeric" onChangeText={(formatted, extracted) => setRg(extracted)} />
           <MaskedTextInput style={styles.input} mask="999 999 999 999" placeholder="Cartão SUS*" keyboardType="numeric" onChangeText={(formatted, extracted) => setCartaoSus(extracted)} />
-          {/* <TextInput style={styles.input} placeholder="Cartão SUS*" value={cartaoSus} onChangeText={setCartaoSus} keyboardType="numeric" /> */}
           
           <Text style={styles.sectionTitle}>Saúde</Text>
           <View style={styles.switchContainer}><Text style={styles.label}>Possui Plano de Saúde?</Text><Switch value={possuiPlano} onValueChange={setPossuiPlano} /></View>
