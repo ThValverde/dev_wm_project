@@ -55,42 +55,41 @@ export default function SelecionarLar({ navigation }) {
   );
 
   const handleAction = () => {
-    navigation.navigate('CriarLar');
+    // Esta navegação pode ser para uma tela que permite criar ou entrar em um lar.
+    // Se você não tem uma tela unificada, pode querer mostrar um menu ou duas opções.
+    navigation.navigate('CriarLar'); 
   };
 
-  // ### CORREÇÃO PRINCIPAL AQUI ###
+  // ### LÓGICA CORRIGIDA E SIMPLIFICADA ###
   const handleSelecionarLar = async (lar) => {
     try {
-      // 1. Pega os dados do usuário logado (salvos no login)
+      // 1. Pega os dados do usuário logado (salvos durante o login)
       const userDataString = await AsyncStorage.getItem('userData');
       if (!userDataString) {
         throw new Error("Dados do usuário não encontrados. Por favor, faça o login novamente.");
       }
       const currentUser = JSON.parse(userDataString);
 
-      // 2. Encontra o perfil do usuário atual dentro da lista de membros do lar selecionado
-      const perfilDoUsuarioNoLar = lar.membros.find(membro => membro.user.id === currentUser.id);
+      // 2. Compara o ID do usuário logado com o ID do admin do lar.
+      // Esta é a forma mais direta e segura de verificar a permissão de admin.
+      // O objeto 'lar' da sua API já contém 'lar.admin.id'.
+      const isUserAdmin = currentUser.id === lar.admin.id;
 
-      // 3. Verifica se o perfil foi encontrado e se a permissão é 'ADMIN'
-      let isUserAdmin = false; // Começa como falso por segurança
-      if (perfilDoUsuarioNoLar) {
-        isUserAdmin = perfilDoUsuarioNoLar.permissao === 'ADMIN';
-      }
-
-      // 4. Salva o ID do grupo e o status de admin (true ou false)
+      // 3. Salva o ID do grupo selecionado e o status de admin ('true' ou 'false')
       await AsyncStorage.setItem('selectedGroupId', lar.id.toString());
-      await AsyncStorage.setItem('isCurrentUserAdmin', JSON.stringify(isUserAdmin));
+      await AsyncStorage.setItem('isCurrentUserAdmin', String(isUserAdmin));
       
+      // 4. Navega para a tela principal
       navigation.navigate('Main');
 
     } catch (error) {
+      console.error("Erro ao selecionar lar:", error);
       Alert.alert('Erro', error.message || 'Não foi possível selecionar o lar. Tente novamente.');
     }
   };
 
   const handleLogout = async () => {
-    const logout = async () => {
-      // Garante que todos os dados de sessão sejam limpos
+    const performLogout = async () => {
       await AsyncStorage.multiRemove(['authToken', 'selectedGroupId', 'userData', 'isCurrentUserAdmin']);
       navigation.reset({
         index: 0,
@@ -100,13 +99,13 @@ export default function SelecionarLar({ navigation }) {
 
     if (Platform.OS === 'web') {
       if (window.confirm('Tem certeza que deseja sair do aplicativo?')) {
-        await logout();
+        await performLogout();
       }
     } else {
       Alert.alert('Sair', 'Tem certeza que deseja sair do aplicativo?',
         [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Sair', style: 'destructive', onPress: logout }
+          { text: 'Sair', style: 'destructive', onPress: performLogout }
         ]
       );
     }
@@ -210,11 +209,7 @@ const styles = StyleSheet.create({
   larStats: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statItem: { flexDirection: 'row', alignItems: 'center' },
   statText: { marginLeft: 4, fontSize: 14, color: '#7f8c8d' },
-  feedbackContainer: { justifyContent: 'center', alignItems: 'center', paddingVertical: 50, paddingHorizontal: 20 },
-  feedbackText: { marginTop: 16, fontSize: 16, color: '#7f8c8d' },
+  feedbackContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
   errorText: { marginTop: 16, fontSize: 16, color: '#e74c3c', textAlign: 'center' },
-  retryButton: { marginTop: 20, backgroundColor: '#2c3e50', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  retryButtonText: { color: '#fff', fontSize: 16 },
   emptyText: { marginTop: 16, fontSize: 18, fontWeight: 'bold', color: '#7f8c8d', textAlign: 'center' },
-  emptySubText: { marginTop: 8, fontSize: 14, color: '#95a5a6', textAlign: 'center' },
 });

@@ -318,7 +318,7 @@ class Prescricao(models.Model):
     # Chave estrangeira para o Idoso a quem a prescrição se destina
     idoso = models.ForeignKey(Idoso, on_delete=models.CASCADE, related_name="prescricoes")
     # Chave estrangeira para o Medicamento prescrito. PROTECT evita que um medicamento seja deletado se houver prescrições ativas para ele
-    medicamento = models.ForeignKey(Medicamento, on_delete=models.PROTECT)
+    medicamento = models.ForeignKey(Medicamento, on_delete=models.CASCADE, related_name='prescricoes_relacionadas')
     # Campo para o horário previsto da administração da dose
     horario_previsto = models.TimeField(verbose_name="Horário da Dose")
     # Campo para a dosagem (ex: "1 comprimido", "5ml")

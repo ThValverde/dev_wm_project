@@ -2,11 +2,13 @@
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from rest_framework import mixins
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.hashers import check_password
 from django.db import transaction
-from django.utils.dateparse import parse_datetime # <-- CORREÇÃO: Importação adicionada aqui
+from django.utils.dateparse import parse_datetime
+from django.contrib.auth import get_user_model
 from .models import Grupo, Idoso, Medicamento, PerfilUsuario, Prescricao, LogAdministracao
 from .serializers import (
     UserRegistrationSerializer,
@@ -22,6 +24,8 @@ from .serializers import (
     ChangePasswordSerializer
 )
 from .permissions import IsGroupAdmin, IsGroupMember
+
+Usuario = get_user_model()
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -96,7 +100,7 @@ class GrupoViewSet(viewsets.ModelViewSet):
         permission_classes = [permissions.IsAuthenticated]
         if self.action == 'retrieve':
             permission_classes = [permissions.IsAuthenticated, IsGroupMember]
-        elif self.action in ['update', 'partial_update', 'destroy', 'codigo_acesso']:
+        elif self.action in ['update', 'partial_update', 'destroy', 'codigo_acesso', 'remover_membro']:
             permission_classes = [permissions.IsAuthenticated, IsGroupAdmin]
         return [permission() for permission in permission_classes]
 
@@ -176,6 +180,55 @@ class GrupoViewSet(viewsets.ModelViewSet):
         perfil_usuario.save()
 
         return Response({'detail': f'Bem-vindo ao grupo {grupo.nome}!'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='remover-membro')
+    def remover_membro(self, request, pk=None):
+        """
+        Remove um membro do grupo. Apenas o admin pode fazer isso.
+        Espera um 'user_id' no corpo da requisição.
+        URL: /api/grupos/{pk}/remover-membro/
+        """
+        grupo = self.get_object()
+        user_id_to_remove = request.data.get('user_id')
+
+        if not user_id_to_remove:
+            return Response({'detail': 'O ID do usuário é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_to_remove = Usuario.objects.get(id=user_id_to_remove)
+            perfil_alvo = PerfilUsuario.objects.get(user=user_to_remove)
+        except (Usuario.DoesNotExist, PerfilUsuario.DoesNotExist):
+            return Response({'detail': 'Usuário não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # O admin não pode remover a si mesmo
+        if user_to_remove == request.user:
+            return Response({'detail': 'O administrador não pode remover a si mesmo do grupo.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verifica se o alvo é realmente membro do grupo
+        if grupo not in perfil_alvo.grupos.all():
+            return Response({'detail': 'Este usuário não é membro do grupo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Remove o grupo do perfil do usuário
+        perfil_alvo.grupos.remove(grupo)
+        
+        # Se o usuário não estiver em mais nenhum grupo, podemos resetar a permissão dele
+        if perfil_alvo.grupos.count() == 0:
+            perfil_alvo.permissao = PerfilUsuario.Permissao.MEMBRO # Ou algum outro padrão
+            perfil_alvo.save()
+
+        return Response({'detail': f'Usuário {user_to_remove.nome_completo} removido do grupo.'}, status=status.HTTP_200_OK)
+    
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        """
+        Sobrescreve o método destroy para garantir que o admin possa deletar o grupo.
+        A permissão IsGroupAdmin já protege esta rota.
+        """
+        grupo = self.get_object()
+        # Ao deletar o grupo, os relacionamentos ManyToMany são limpos automaticamente.
+        # Os modelos com ForeignKey e on_delete=CASCADE (Idoso, Medicamento, etc.) serão deletados em cascata.
+        self.perform_destroy(grupo)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 # --- Views de Recursos do Grupo (Idosos, Medicamentos) ---
 
