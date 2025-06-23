@@ -81,17 +81,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
+# Database          
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
+# DATABASES = {             # LOCAL
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
 
-DATABASES = {               # LOCAL
+DATABASES = {             # DEPLOY
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600
@@ -99,7 +99,7 @@ DATABASES = {               # LOCAL
 }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators  
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -154,16 +154,24 @@ AUTH_USER_MODEL = 'api.Usuario'
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none'
 
-CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'http://10.0.2.2:8000',      # For Android emulator access to host's localhost
-    'http://192.168.0.14:8000', # For local network access if server runs on this IP/port
-    'http://localhost:8081',  # For React Native Metro bundler
-    # If your frontend runs on a different port (e.g., React, Vue, Angular dev server), add its origin here:
-    # 'http://localhost:3000',
-    # 'http://127.0.0.1:3000',
+# CORS_ALLOWED_ORIGINS = [        # LOCAL
+#     'http://127.0.0.1:8000',
+#     'http://localhost:8000',
+#     'http://10.0.2.2:8000',      # For Android emulator access to host's localhost
+#     'http://192.168.0.14:8000', # For local network access if server runs on this IP/port
+#     'http://localhost:8081',  # For React Native Metro bundler
+#     # If your frontend runs on a different port (e.g., React, Vue, Angular dev server), add its origin here:
+#     # 'http://localhost:3000',
+#     # 'http://127.0.0.1:3000',
+# ]
+
+CORS_ALLOWED_ORIGINS = [            # DEPLOY
+    # Adicione a URL do seu frontend em produção aqui
+    # Exemplo: 'https://meu-frontend.onrender.com',
+    'https://e-doso-backend.onrender.com',
 ]
+
+
 CORS_ALLOW_HEADERS = [
     'authorization',
     'content-type',
@@ -178,18 +186,18 @@ CORS_ALLOW_METHODS = [
     'OPTIONS',
 ]
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-    '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
-    '192.168.0.14', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
-]
+# ALLOWED_HOSTS = [         # LOCAL
+#     '127.0.0.1',
+#     'localhost',
+#     '10.0.2.2',  # IP para o emulador Android acessar o localhost do host
+#     '192.168.0.14', # IP da sua máquina na rede local (verifique e ajuste se for diferente)
+# ]
 
-# ALLOWED_HOSTS = []
+ALLOWED_HOSTS = []      # DEPLOY
 
-# RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-# if RENDER_EXTERNAL_HOSTNAME:
-#     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')     # DEPLOY
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
