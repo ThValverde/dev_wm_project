@@ -168,7 +168,8 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'  # Pode ser 'mandatory', 'optional' ou 'none
 CORS_ALLOWED_ORIGINS = [            # DEPLOY
     # Adicione a URL do seu frontend em produção aqui
     # Exemplo: 'https://meu-frontend.onrender.com',
-    'https://e-doso-backend.onrender.com',
+    # 'https://e-doso-backend.onrender.com',
+    'http://localhost:8081',
 ]
 
 
