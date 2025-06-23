@@ -71,37 +71,59 @@ export default function CadastroPrescricao({ route, navigation }) {
     
     // Função para salvar a nova prescrição
     const handleSave = async () => {
-        if (!medicamentoId || !dosagem.trim()) {
-            Alert.alert("Erro", "Selecione um medicamento e informe a dosagem.");
-            return;
+    // Validação CORRIGIDA: usa 'doseValor' em vez de 'dosagem'
+    if (!medicamentoId || !doseValor.trim()) {
+        Alert.alert("Erro", "Selecione um medicamento e informe o valor da dosagem.");
+        return;
+    }
+    setCarregando(true);
+    try {
+        const token = await AsyncStorage.getItem('authToken');
+        const groupId = await AsyncStorage.getItem('selectedGroupId');
+        
+        // Payload enviado para a API
+        const payload = {
+            idoso_id: idosoId,
+            medicamento_id: medicamentoId,
+            horario_previsto: horario,
+            dosagem: `${doseValor} ${doseUnidade}`, // Combina valor e unidade em uma única string
+            instrucoes: instrucoes,
+            ativo: true,
+            frequencia: 'DI',
+            ...diasSemana,
+        };
+        
+        await axios.post(`${baseURL}/api/grupos/${groupId}/prescricoes/`, payload, {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+        
+        Alert.alert("Sucesso", "Prescrição adicionada.");
+        navigation.goBack();
+
+    } catch (error) {
+        // Bloco de erro aprimorado para dar mais detalhes
+        let errorMessage = "Não foi possível salvar a prescrição.";
+        if (error.response && error.response.data) {
+            const errors = error.response.data;
+            // Pega a primeira mensagem de erro retornada pela API
+            const firstErrorKey = Object.keys(errors)[0];
+            if (firstErrorKey && Array.isArray(errors[firstErrorKey])) {
+                errorMessage = `${firstErrorKey}: ${errors[firstErrorKey][0]}`;
+            } else if (errors.detail) {
+                errorMessage = errors.detail;
+            }
+        } else if (error.message) {
+            // Caso seja um erro de referência ou de rede
+            errorMessage = error.message;
         }
-        setCarregando(true);
-        try {
-            const token = await AsyncStorage.getItem('authToken');
-            const groupId = await AsyncStorage.getItem('selectedGroupId');
-            const payload = {
-                idoso_id: idosoId,
-                medicamento_id: medicamentoId,
-                horario_previsto: horario,
-                dose_valor: parseFloat(doseValor),
-                dose_unidade: doseUnidade,
-                instrucoes: instrucoes,
-                ativo: true, // Prescrição começa ativa por padrão
-                frequencia: 'DI', // Frequência diária como padrão, pode ser alterado se necessário
-                ...diasSemana, // Adiciona os valores booleanos de cada dia
-            };
-            await axios.post(`${baseURL}/api/grupos/${groupId}/prescricoes/`, payload, {
-                headers: { 'Authorization': `Token ${token}` }
-            });
-            Alert.alert("Sucesso", "Prescrição adicionada.");
-            navigation.goBack();
-        } catch (error) {
-            console.error("Erro ao salvar prescrição:", error.response?.data || error.message);
-            Alert.alert("Erro", "Não foi possível salvar a prescrição.");
-        } finally {
-            setCarregando(false);
-        }
-    };
+        
+        console.error("Erro ao salvar prescrição:", error.response?.data || error.message);
+        Alert.alert("Erro", errorMessage);
+
+    } finally {
+        setCarregando(false);
+    }
+};
     
     if (carregando && medicamentos.length === 0) {
         return <ActivityIndicator size="large" style={{flex: 1, justifyContent: 'center'}} />;

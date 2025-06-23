@@ -93,41 +93,37 @@ export default function LogAdministracoes() {
     }
   };
 
-  const handleDeleteLog = (logIdToDelete) => {
+const handleDeleteLog = (logIdToDelete) => {
     const deleteAction = async () => {
       try {
+        setCarregando(true); // Inicia o carregamento para feedback visual
         const token = await AsyncStorage.getItem('authToken');
         const groupId = await AsyncStorage.getItem('selectedGroupId');
+
+        // 1. Deleta o registro no servidor
         await axios.delete(`${baseURL}/api/grupos/${groupId}/logs/${logIdToDelete}/`, {
           headers: { 'Authorization': `Token ${token}` }
         });
         
-        setLogsAgrupados(currentSections => {
-            return currentSections.map(section => ({
-                ...section,
-                data: section.data.filter(log => log.id !== logIdToDelete)
-            })).filter(section => section.data.length > 0);
-        });
+        // 2. Exibe a mensagem de sucesso
+        Alert.alert("Sucesso", "O registro foi excluído.");
 
-        // CORREÇÃO: Mensagem de sucesso para web e mobile
-        if (Platform.OS === 'web') {
-            window.alert("Registro de log excluído com sucesso.");
-        } else {
-            Alert.alert("Sucesso", "Registro de log excluído.");
-        }
+        // 3. Recarrega os dados para atualizar a interface
+        // Isso garante que a lista estará sempre sincronizada com o servidor.
+        // A paginação retornará para a primeira página.
+        const initialUrl = `${baseURL}/api/grupos/${groupId}/logs/`;
+        await fetchLogs(initialUrl);
 
       } catch (error) {
-        const errorMessage = error.response?.data?.detail || "Não foi possível excluir o registro. Tente novamente.";
-        
-        // CORREÇÃO: Mensagem de erro para web e mobile
-        if (Platform.OS === 'web') {
-            window.alert(`Erro: ${errorMessage}`);
-        } else {
-            Alert.alert("Acesso Negado", errorMessage);
-        }
+        // Em caso de erro, exibe uma mensagem clara
+        const errorMessage = error.response?.data?.detail || "Não foi possível excluir o registro.";
+        Alert.alert("Erro", errorMessage);
+        setCarregando(false); // Garante que o loading seja desativado em caso de erro
       }
+      // A própria função fetchLogs já desativa o 'carregando' em caso de sucesso
     };
 
+    // Lógica de confirmação (sem alterações)
     if (Platform.OS === 'web') {
         if(window.confirm("Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.")) {
             deleteAction();
@@ -187,7 +183,7 @@ export default function LogAdministracoes() {
                 />
                 <SectionList
                     sections={logsAgrupados}
-                    keyExtractor={(item, index) => item.id.toString() + index}
+                    keyExtractor={(item) => item.id.toString()}
                     renderItem={renderItem}
                     renderSectionHeader={renderSectionHeader}
                     contentContainerStyle={styles.listContainer}

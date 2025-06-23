@@ -246,18 +246,13 @@ class PrescricaoViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """
-        Associa a nova prescrição a um idoso e a um medicamento,
-        garantindo que ambos pertençam ao grupo correto.
+        Salva a prescrição. A validação (incluindo a verificação de grupo)
+        já foi feita no serializer.
         """
-        grupo_pk = self.kwargs.get('grupo_pk')
-        idoso_id = self.request.data.get('idoso_id')
-        medicamento_id = self.request.data.get('medicamento_id')
-        # Garante que o idoso e o medicamento pertencem ao grupo da URL
-        idoso = get_object_or_404(Idoso, pk=idoso_id, grupo_id=grupo_pk)
-        medicamento = get_object_or_404(Medicamento, pk=medicamento_id, grupo_id=grupo_pk)
-        serializer.save(idoso=idoso, medicamento=medicamento)
+        serializer.save()
     
     @action(detail=True, methods=['post'], url_path='administrar')
+    @transaction.atomic # Garante que as operações no banco de dados sejam atômicas
     @transaction.atomic # Garante que as operações no banco de dados sejam atômicas
     def administrar(self, request, pk=None, grupo_pk=None):
         """

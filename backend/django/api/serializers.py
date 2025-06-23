@@ -55,6 +55,32 @@ class PrescricaoSerializer(serializers.ModelSerializer):
             'dia_quinta', 'dia_sexta', 'dia_sabado'
         ]
 
+        def validate(self, data):
+            """
+            Verifica se o idoso e o medicamento pertencem ao grupo da URL.
+            """
+            # O grupo_pk é passado para o contexto do serializer pela view.
+            view = self.context.get('view')
+            grupo_pk = view.kwargs.get('grupo_pk') if view else None
+            
+            if not grupo_pk:
+                # Isso não deveria acontecer se a URL estiver correta.
+                raise serializers.ValidationError("A URL deve conter o ID do grupo.")
+
+            # 'data' contém os objetos Idoso e Medicamento, validados pelo PrimaryKeyRelatedField.
+            idoso = data.get('idoso')
+            medicamento = data.get('medicamento')
+
+            # Verifica se o ID do grupo do idoso corresponde ao da URL.
+            if idoso and str(idoso.grupo.id) != grupo_pk:
+                raise serializers.ValidationError({'idoso_id': 'Este idoso não pertence ao grupo selecionado.'})
+
+            # Verifica se o ID do grupo do medicamento corresponde ao da URL.
+            if medicamento and str(medicamento.grupo.id) != grupo_pk:
+                raise serializers.ValidationError({'medicamento_id': 'Este medicamento não pertence ao estoque do grupo.'})
+
+            return data
+
 # --- CORREÇÃO PRINCIPAL AQUI ---
 class LogAdministracaoSerializer(serializers.ModelSerializer):
     """

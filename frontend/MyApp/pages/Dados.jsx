@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -35,7 +35,7 @@ function getPlanoSaudeDisplay(idoso) {
 }
 
 // --- Componente Principal ---
-function Dados({ route, navigation }) {
+export default function Dados({ route, navigation }) {
   const { idosoId } = route.params;
 
   const [idoso, setIdoso] = useState(null);
@@ -43,58 +43,55 @@ function Dados({ route, navigation }) {
   const [erro, setErro] = useState(null);
 
   // Função para buscar os dados do idoso na API
-useFocusEffect(
-  useCallback(() => {
-    // 1. A função que o hook recebe NÃO é async.
-    
-    // 2. Definimos nossa função async AQUI DENTRO.
-    const fetchData = async () => {
-      if (!idosoId) {
-        setErro("ID do idoso não fornecido.");
-        setCarregando(false);
-        return;
-      }
-      try {
-        setCarregando(true);
-        const token = await AsyncStorage.getItem('authToken');
-        const groupId = await AsyncStorage.getItem('selectedGroupId');
-        if (!token || !groupId) throw new Error("Sessão inválida.");
+  const fetchData = useCallback(async () => {
+    if (!idosoId) {
+      setErro("ID do idoso não fornecido.");
+      setCarregando(false);
+      return;
+    }
+    try {
+      setCarregando(true);
+      const token = await AsyncStorage.getItem('authToken');
+      const groupId = await AsyncStorage.getItem('selectedGroupId');
+      if (!token || !groupId) throw new Error("Sessão inválida.");
 
-        const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
-          headers: { 'Authorization': `Token ${token}` }
-        });
+      const response = await axios.get(`${baseURL}/api/grupos/${groupId}/idosos/${idosoId}/`, {
+        headers: { 'Authorization': `Token ${token}` }
+      });
 
-        setIdoso(response.data);
-        setErro(null);
-      } catch (err) {
-        console.error("Erro ao buscar dados do idoso:", err.response?.data || err.message);
-        setErro("Não foi possível carregar os dados do idoso.");
-      } finally {
-        setCarregando(false);
-      }
-    };
+      setIdoso(response.data);
+      setErro(null);
+    } catch (err) {
+      console.error("Erro ao buscar dados do idoso:", err.response?.data || err.message);
+      setErro("Não foi possível carregar os dados do idoso.");
+    } finally {
+      setCarregando(false);
+    }
+  }, [idosoId]);
 
-    // 3. Chamamos a função async que acabamos de criar.
-    fetchData();
-
-  }, [idosoId]) // A dependência do useCallback continua sendo o idosoId
-);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
 
   const handleDeletePrescricao = (prescricaoId) => {
     const deleteAction = async () => {
         try {
+            setCarregando(true);
             const token = await AsyncStorage.getItem('authToken');
             const groupId = await AsyncStorage.getItem('selectedGroupId');
             await axios.delete(`${baseURL}/api/grupos/${groupId}/prescricoes/${prescricaoId}/`, {
                 headers: { 'Authorization': `Token ${token}` }
             });
             Alert.alert("Sucesso", "Prescrição removida.");
-            fetchIdosoData(); // Força a re-busca dos dados para atualizar a lista
+            await fetchData(); // CORRIGIDO: Chama a função correta para atualizar a lista
         } catch (error) {
             Alert.alert("Erro", "Não foi possível remover a prescrição.");
+            setCarregando(false);
         }
     };
-    // Lógica de Alerta compatível com Web e Mobile
+
     if (Platform.OS === 'web') {
         if(window.confirm("Tem certeza que deseja remover esta prescrição?")) {
             deleteAction();
@@ -109,7 +106,7 @@ useFocusEffect(
 
   // Renderização de estados de carregamento e erro
   if (carregando) {
-    return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color="#fff" /></SafeAreaView>;
+    return <SafeAreaView style={styles.safeArea}><ActivityIndicator size="large" color="#2c3e50" /></SafeAreaView>;
   }
   if (erro) {
     return <SafeAreaView style={styles.safeArea}><Text style={styles.noDataText}>{erro}</Text></SafeAreaView>;
@@ -217,5 +214,3 @@ const styles = StyleSheet.create({
     noDataText: { fontSize: 18, color: '#2c3e50', textAlign: 'center', marginTop: 50, paddingHorizontal: 20 },
     noDataTextSmall: { fontSize: 14, color: '#7f8c8d', fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
 });
-
-export default Dados;
